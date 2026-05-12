@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npx prisma@6 generate --schema=backend/prisma/schema.prisma && cd frontend && npm install && npm run build",
+  "buildCommand": "npm run build",
+
 
 
   "outputDirectory": "frontend/dist",

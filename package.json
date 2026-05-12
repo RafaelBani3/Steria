@@ -1,0 +1,13 @@
+{
+  "name": "steria-finance-root",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "prisma": "^6.19.3"
+  }
+}
