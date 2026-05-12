@@ -455,15 +455,15 @@ export default function BudgetManagement() {
                             </>
                           ) : (
                             <>
-                              <button 
+                              <button
                                 onClick={() => startEditing(item)}
-                                className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-lg transition-all"
+                                className="p-2 text-gray-300 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-lg transition-all"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => deleteBudgetItem(activeBudget.id, item.id)}
-                                className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
+                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

@@ -251,22 +251,23 @@ export default function SavingsTracker() {
         {savings.map(goal => {
           const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
           return (
-            <motion.div 
-              key={goal.id} 
+            <motion.div
+              key={goal.id}
               layout
-              className="bg-white dark:bg-[#1E293B] p-8 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col group hover:border-purple-200 dark:hover:border-purple-900/30 transition-all"
+              className="bg-white dark:bg-[#1E293B] p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col hover:border-purple-200 dark:hover:border-purple-900/30 transition-all"
             >
-              <div className="flex justify-between items-start mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                    <Target className="w-7 h-7" />
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                    <Target className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-black text-xl text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
-                    <p className="text-sm text-gray-400 font-medium">Goal achieved {progress.toFixed(0)}%</p>
+                    <h3 className="font-black text-lg text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
+                    <p className="text-xs text-gray-400 font-medium">Goal: {progress.toFixed(0)}% achieved</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Always visible on mobile */}
+                <div className="flex items-center gap-1">
                   <button onClick={() => startEditing(goal)} className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-xl transition-all">
                     <Edit3 className="w-4 h-4" />
                   </button>
