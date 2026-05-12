@@ -9,7 +9,18 @@ import Footer from '../components/Footer';
 const COLORS = ['#6C4CF1', '#10B981', '#F59E0B', '#EF4444'];
 
 export default function Dashboard() {
-  const { incomes, expenses, savings, fetchIncomes, fetchExpenses, fetchSavings, fetchBudgets, budgets, selectedMonth, selectedYear } = useFinanceStore();
+  const { 
+    incomes = [], 
+    expenses = [], 
+    savings = [], 
+    fetchIncomes, 
+    fetchExpenses, 
+    fetchSavings, 
+    fetchBudgets, 
+    budgets = [], 
+    selectedMonth, 
+    selectedYear 
+  } = useFinanceStore();
 
   useEffect(() => {
     fetchIncomes();
@@ -18,22 +29,30 @@ export default function Dashboard() {
     fetchBudgets();
   }, [selectedMonth, selectedYear]);
 
-  const activeBudget = budgets[0];
+  // Ensure we are working with arrays
+  const safeIncomes = Array.isArray(incomes) ? incomes : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeSavings = Array.isArray(savings) ? savings : [];
+  const safeBudgets = Array.isArray(budgets) ? budgets : [];
+
+  const activeBudget = safeBudgets[0];
   const pattern = activeBudget?.method || '50/30/20';
 
-  const filteredIncomes = incomes.filter(item => {
+  const filteredIncomes = safeIncomes.filter(item => {
+    if (!item?.date) return false;
     const d = new Date(item.date);
     return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
   });
 
-  const filteredExpenses = expenses.filter(item => {
+  const filteredExpenses = safeExpenses.filter(item => {
+    if (!item?.date) return false;
     const d = new Date(item.date);
     return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
   });
 
-  const totalIncome = filteredIncomes.reduce((sum, item) => sum + item.amount, 0);
-  const totalExpense = filteredExpenses.reduce((sum, item) => sum + item.amount, 0);
-  const totalSavingsValue = savings.reduce((sum, item) => sum + item.currentAmount, 0);
+  const totalIncome = filteredIncomes.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const totalExpense = filteredExpenses.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const totalSavingsValue = safeSavings.reduce((sum, item) => sum + (item.currentAmount || 0), 0);
   const monthlySurplus = totalIncome - totalExpense;
   const savingsRate = totalIncome > 0 ? (monthlySurplus / totalIncome) * 100 : 0;
 
@@ -43,8 +62,9 @@ export default function Dashboard() {
 
   // Group expenses by category for breakdown
   const expensesByCategory = filteredExpenses.reduce((acc, exp) => {
+    if (!exp.category) return acc;
     if (!acc[exp.category]) acc[exp.category] = 0;
-    acc[exp.category] += exp.amount;
+    acc[exp.category] += (exp.amount || 0);
     return acc;
   }, {});
 
@@ -58,8 +78,17 @@ export default function Dashboard() {
   const trendData = [...Array(daysInMonth)].map((_, i) => {
     const day = i + 1;
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dayIncome = filteredIncomes.filter(i => i.date.startsWith(dateStr)).reduce((sum, i) => sum + i.amount, 0);
-    const dayExpense = filteredExpenses.filter(e => e.date.startsWith(dateStr)).reduce((sum, e) => sum + e.amount, 0);
+    
+    const dayIncome = filteredIncomes.filter(inc => {
+      const d = new Date(inc.date).toISOString().split('T')[0];
+      return d === dateStr;
+    }).reduce((sum, inc) => sum + (inc.amount || 0), 0);
+
+    const dayExpense = filteredExpenses.filter(exp => {
+      const d = new Date(exp.date).toISOString().split('T')[0];
+      return d === dateStr;
+    }).reduce((sum, exp) => sum + (exp.amount || 0), 0);
+
     return { day, income: dayIncome, expense: dayExpense };
   });
 
@@ -67,13 +96,14 @@ export default function Dashboard() {
   const monthlyTrendData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months.map((m, index) => {
-      const monthExpenses = expenses.filter(e => {
+      const monthExpenses = safeExpenses.filter(e => {
+        if (!e?.date) return false;
         const d = new Date(e.date);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
       });
       
-      const expTotal = monthExpenses.filter(e => e.category !== 'Savings').reduce((s, e) => s + e.amount, 0);
-      const savTotal = monthExpenses.filter(e => e.category === 'Savings').reduce((s, e) => s + e.amount, 0);
+      const expTotal = monthExpenses.filter(e => e.category !== 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
+      const savTotal = monthExpenses.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
       
       return {
         name: m,
@@ -81,7 +111,8 @@ export default function Dashboard() {
         savings: savTotal,
       };
     });
-  }, [expenses, selectedYear]);
+  }, [safeExpenses, selectedYear]);
+
 
   const containerVariants = {
     hidden: { opacity: 0 },
