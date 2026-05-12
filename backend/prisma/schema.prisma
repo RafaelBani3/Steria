@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incomes  Income[]
+  budgets  Budget[]
+  expenses Expense[]
+  savings  Saving[]
+}
+
+model Income {
+  id        String   @id @default(uuid())
+  source    String
+  amount    Float
+  category  String
+  date      DateTime
+  notes     String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Budget {
+  id           String   @id @default(uuid())
+  name         String
+  method       String   // e.g., "50/30/20", "custom"
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetItems  BudgetItem[]
+}
+
+model BudgetItem {
+  id         String   @id @default(uuid())
+  budgetId   String
+  category   String   // e.g., "Needs", "Wants", "Savings"
+  subCategory String?
+  percentage Float?   // optional for custom budgets
+  amount     Float    // allocated amount based on income
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  budget   Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+}
+
+model Expense {
+  id           String   @id @default(uuid())
+  amount       Float
+  category     String
+  subCategory  String?
+  date         DateTime
+  description  String?
+  userId       String
+  budgetItemId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetItem BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+}
+
+model Saving {
+  id           String   @id @default(uuid())
+  name         String   // e.g., "Emergency Fund"
+  targetAmount Float
+  currentAmount Float   @default(0)
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savingsLogs SavingsLog[]
+}
+
+model SavingsLog {
+  id        String   @id @default(uuid())
+  savingId  String
+  amount    Float
+  type      String   // "DEPOSIT" or "WITHDRAWAL"
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  saving Saving @relation(fields: [savingId], references: [id], onDelete: Cascade)
+}
