@@ -19,12 +19,21 @@ export const useAuthStore = create((set) => ({
       set({ user, token, isLoading: false });
       return true;
     } catch (error) {
-      const errorMessage = error.response?.data?.error;
-      const finalMessage = typeof errorMessage === 'object' 
-        ? (errorMessage.message || JSON.stringify(errorMessage))
-        : (errorMessage || 'Login failed');
+      console.error('Login error:', error);
+      let finalMessage = 'Login failed';
       
-      set({ error: finalMessage, isLoading: false });
+      if (error.response?.data?.error) {
+        const errData = error.response.data.error;
+        if (typeof errData === 'object') {
+          finalMessage = errData.message || errData.code || JSON.stringify(errData);
+        } else {
+          finalMessage = String(errData);
+        }
+      } else if (error.message) {
+        finalMessage = error.message;
+      }
+      
+      set({ error: String(finalMessage), isLoading: false });
       return false;
     }
   },
@@ -36,14 +45,25 @@ export const useAuthStore = create((set) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      const errorMessage = error.response?.data?.error;
-      const finalMessage = typeof errorMessage === 'object' 
-        ? (errorMessage.message || JSON.stringify(errorMessage))
-        : (errorMessage || 'Registration failed');
-        
-      set({ error: finalMessage, isLoading: false });
+      console.error('Registration error:', error);
+      let finalMessage = 'Registration failed';
+
+      if (error.response?.data?.error) {
+        const errData = error.response.data.error;
+        if (typeof errData === 'object') {
+          finalMessage = errData.message || errData.code || JSON.stringify(errData);
+        } else {
+          finalMessage = String(errData);
+        }
+      } else if (error.message) {
+        finalMessage = error.message;
+      }
+
+      set({ error: String(finalMessage), isLoading: false });
       return false;
     }
+  },
+
 
   },
 
