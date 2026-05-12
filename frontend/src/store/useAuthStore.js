@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+const extractErrorMessage = (error, fallback) => {
+  if (error.response?.data?.error) {
+    const errData = error.response.data.error;
+    if (typeof errData === 'object') {
+      return String(errData.message || errData.code || JSON.stringify(errData));
+    }
+    return String(errData);
+  }
+  if (error.message) return String(error.message);
+  return fallback;
+};
+
 export const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('steria_user')) || null,
   token: localStorage.getItem('steria_token') || null,
@@ -12,28 +24,15 @@ export const useAuthStore = create((set) => ({
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
-      
+
       localStorage.setItem('steria_token', token);
       localStorage.setItem('steria_user', JSON.stringify(user));
-      
+
       set({ user, token, isLoading: false });
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      let finalMessage = 'Login failed';
-      
-      if (error.response?.data?.error) {
-        const errData = error.response.data.error;
-        if (typeof errData === 'object') {
-          finalMessage = errData.message || errData.code || JSON.stringify(errData);
-        } else {
-          finalMessage = String(errData);
-        }
-      } else if (error.message) {
-        finalMessage = error.message;
-      }
-      
-      set({ error: String(finalMessage), isLoading: false });
+      set({ error: extractErrorMessage(error, 'Login failed'), isLoading: false });
       return false;
     }
   },
@@ -46,30 +45,14 @@ export const useAuthStore = create((set) => ({
       return true;
     } catch (error) {
       console.error('Registration error:', error);
-      let finalMessage = 'Registration failed';
-
-      if (error.response?.data?.error) {
-        const errData = error.response.data.error;
-        if (typeof errData === 'object') {
-          finalMessage = errData.message || errData.code || JSON.stringify(errData);
-        } else {
-          finalMessage = String(errData);
-        }
-      } else if (error.message) {
-        finalMessage = error.message;
-      }
-
-      set({ error: String(finalMessage), isLoading: false });
+      set({ error: extractErrorMessage(error, 'Registration failed'), isLoading: false });
       return false;
     }
-  },
-
-
   },
 
   logout: () => {
     localStorage.removeItem('steria_token');
     localStorage.removeItem('steria_user');
     set({ user: null, token: null });
-  }
+  },
 }));
