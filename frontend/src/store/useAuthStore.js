@@ -19,7 +19,12 @@ export const useAuthStore = create((set) => ({
       set({ user, token, isLoading: false });
       return true;
     } catch (error) {
-      set({ error: error.response?.data?.error || 'Login failed', isLoading: false });
+      const errorMessage = error.response?.data?.error;
+      const finalMessage = typeof errorMessage === 'object' 
+        ? (errorMessage.message || JSON.stringify(errorMessage))
+        : (errorMessage || 'Login failed');
+      
+      set({ error: finalMessage, isLoading: false });
       return false;
     }
   },
@@ -31,9 +36,15 @@ export const useAuthStore = create((set) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: error.response?.data?.error || 'Registration failed', isLoading: false });
+      const errorMessage = error.response?.data?.error;
+      const finalMessage = typeof errorMessage === 'object' 
+        ? (errorMessage.message || JSON.stringify(errorMessage))
+        : (errorMessage || 'Registration failed');
+        
+      set({ error: finalMessage, isLoading: false });
       return false;
     }
+
   },
 
   logout: () => {
