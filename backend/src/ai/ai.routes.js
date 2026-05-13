@@ -7,7 +7,7 @@ const router = express.Router();
 // Secure endpoint with authentication middleware
 router.use(authenticate);
 
-// POST /api/ai/process-finance
-router.post('/process-finance', processFinanceController);
+// POST /api/ai
+router.post('/', processFinanceController);
 
 export default router;

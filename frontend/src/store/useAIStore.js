@@ -46,7 +46,7 @@ export const useAIStore = create((set, get) => ({
     });
 
     try {
-      const response = await api.post('/ai/process-finance', { 
+      const response = await api.post('/ai', { 
         message: messageText.trim() 
       });
 
