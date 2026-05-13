@@ -1,11 +1,69 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import logo from '../assets/logo1.png';
+
+/* ─── Keyframe styles injected once ─── */
+const GLOBAL_STYLES = `
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0px);  }
+    50%       { transform: translateY(-8px); }
+  }
+  @keyframes borderGlow {
+    0%, 100% { box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(108,76,241,0); }
+    50%       { box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 24px 2px rgba(108,76,241,0.25); }
+  }
+  @keyframes shimmer {
+    0%   { transform: translateX(-150%) skewX(-20deg); }
+    100% { transform: translateX(350%)  skewX(-20deg); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.15; transform: scale(1);   }
+    50%       { opacity: 0.8;  transform: scale(1.4); }
+  }
+  input::placeholder { color: rgba(255,255,255,0.25); }
+`;
+
+/* ─── Deterministic star positions (no re-render flicker) ─── */
+const STARS = Array.from({ length: 30 }, (_, i) => ({
+  id: i,
+  left: ((i * 137.508) % 100).toFixed(2),
+  top:  ((i *  97.333) % 100).toFixed(2),
+  size: (1 + (i % 3)),
+  dur:  2 + (i % 4),
+  delay: (i * 0.3) % 4,
+}));
+
+/* ─── Floating orb ─── */
+const Orb = ({ style, animateExtra = {} }) => (
+  <motion.div
+    animate={{ y: [0, -24, 0], x: [0, 10, 0], scale: [1, 1.06, 1], ...animateExtra }}
+    transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', ...style?.transition }}
+    style={{ position: 'absolute', borderRadius: '50%', pointerEvents: 'none', ...style }}
+  />
+);
+
+/* ─── Stagger variants ─── */
+const formVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.45 } },
+};
+const itemVariants = {
+  hidden:  { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 22 } },
+};
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [focused,  setFocused]  = useState('');
   const { login, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
@@ -15,63 +73,235 @@ export default function Login() {
     if (success) navigate('/dashboard');
   };
 
+  const inputStyle = (field) => ({
+    width: '100%',
+    background: focused === field ? 'rgba(108,76,241,0.13)' : 'rgba(255,255,255,0.06)',
+    border: focused === field ? '1.5px solid rgba(108,76,241,0.75)' : '1.5px solid rgba(255,255,255,0.1)',
+    borderRadius: '14px',
+    padding: field === 'password' ? '0.85rem 3rem 0.85rem 2.8rem' : '0.85rem 1rem 0.85rem 2.8rem',
+    color: '#fff',
+    fontSize: '0.95rem',
+    outline: 'none',
+    transition: 'all 0.25s ease',
+    boxSizing: 'border-box',
+    boxShadow: focused === field ? '0 0 0 3px rgba(108,76,241,0.18)' : 'none',
+  });
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-purple-500/5 p-8 border border-gray-100"
-      >
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#6C4CF1] to-[#10B981] flex items-center justify-center text-white font-bold text-xl shadow-lg mx-auto mb-4">
-            S
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-500 mt-2">Enter your credentials to access Steria</p>
-        </div>
+    <>
+      <style>{GLOBAL_STYLES}</style>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm mb-6 border border-red-100">
-            {error}
-          </div>
-        )}
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(-45deg, #0f0c29, #302b63, #1a1040, #24243e, #0d1b2a)',
+        backgroundSize: '400% 400%',
+        animation: 'bgShift 14s ease infinite',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1rem', position: 'relative', overflow: 'hidden',
+        fontFamily: "'Inter','Segoe UI',sans-serif",
+      }}>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all"
-              placeholder="name@company.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-500/20 transition-all transform active:scale-[0.98] disabled:opacity-50"
+        {/* ── Star particles ── */}
+        {STARS.map(s => (
+          <div key={s.id} style={{
+            position: 'absolute',
+            left: `${s.left}%`, top: `${s.top}%`,
+            width: s.size, height: s.size,
+            borderRadius: '50%',
+            background: '#fff',
+            animation: `twinkle ${s.dur}s ${s.delay}s ease-in-out infinite`,
+            pointerEvents: 'none',
+          }} />
+        ))}
+
+        {/* ── Orbs ── */}
+        <Orb style={{ width: 340, height: 340, background: 'radial-gradient(circle, rgba(108,76,241,0.4) 0%, transparent 70%)', top: '-100px', left: '-100px', transition: { duration: 8 } }} />
+        <Orb style={{ width: 260, height: 260, background: 'radial-gradient(circle, rgba(16,185,129,0.28) 0%, transparent 70%)', bottom: '-70px', right: '-70px', transition: { duration: 9, delay: 1.5 } }} animateExtra={{ x: [0, -12, 0] }} />
+        <Orb style={{ width: 200, height: 200, background: 'radial-gradient(circle, rgba(236,72,153,0.22) 0%, transparent 70%)', top: '38%', right: '8%', transition: { duration: 10, delay: 2.5 } }} />
+
+        {/* ── Card ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, type: 'spring', stiffness: 160, damping: 20 }}
+          style={{
+            width: '100%', maxWidth: '440px',
+            background: 'rgba(255,255,255,0.065)',
+            backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
+            border: '1.5px solid rgba(255,255,255,0.13)',
+            borderRadius: '28px', padding: '2.5rem',
+            animation: 'borderGlow 4s ease-in-out infinite',
+            position: 'relative', zIndex: 10, overflow: 'hidden',
+          }}
+        >
+          {/* Inner highlight line */}
+          <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' }} />
+
+          {/* ── Logo + Header ── */}
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+            style={{ textAlign: 'center', marginBottom: '2rem' }}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+            <img
+              src={logo}
+              alt="Steria Logo"
+              style={{
+                width: '78px', height: '78px', objectFit: 'contain',
+                margin: '0 auto 1rem', display: 'block',
+                filter: 'drop-shadow(0 0 22px rgba(108,76,241,0.7))',
+                animation: 'logoFloat 3.5s ease-in-out infinite',
+              }}
+            />
 
-        <p className="text-center text-gray-500 mt-8 text-sm">
-          Don't have an account? <Link to="/register" className="text-purple-600 font-bold hover:underline">Sign up</Link>
-        </p>
-      </motion.div>
-    </div>
+            {/* Gradient heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              style={{
+                fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px',
+                background: 'linear-gradient(135deg, #fff 0%, #c4b5fd 60%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Welcome back!
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.45 }}
+              style={{ color: 'rgba(255,255,255,0.45)', marginTop: '0.4rem', fontSize: '0.9rem' }}
+            >
+              Track your spending, manage your budgets, and grow your savings smarter.
+            </motion.p>
+          </motion.div>
+
+          {/* ── Error ── */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '0.85rem', marginBottom: '1.25rem' }}
+            >
+              ⚠️ {error}
+            </motion.div>
+          )}
+
+          {/* ── Form (staggered) ── */}
+          <motion.form
+            onSubmit={handleSubmit}
+            variants={formVariants}
+            initial="hidden"
+            animate="visible"
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+          >
+            {/* Email */}
+            <motion.div variants={itemVariants} whileTap={{ scale: 0.995 }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                Email Address
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', opacity: 0.45 }}>✉️</span>
+                <input
+                  required type="email" value={email}
+                  onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  style={inputStyle('email')}
+                />
+              </div>
+            </motion.div>
+
+            {/* Password */}
+            <motion.div variants={itemVariants} whileTap={{ scale: 0.995 }}>
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', opacity: 0.45 }}>🔒</span>
+                <input
+                  required type={showPass ? 'text' : 'password'} value={password}
+                  onFocus={() => setFocused('password')} onBlur={() => setFocused('')}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={inputStyle('password')}
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: 0.55, color: '#fff', padding: 0 }}>
+                  {showPass ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Submit button with shimmer */}
+            <motion.div variants={itemVariants}>
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                whileHover={{ scale: 1.025 }}
+                whileTap={{ scale: 0.965 }}
+                style={{
+                  marginTop: '0.5rem', width: '100%', padding: '0.95rem',
+                  background: isLoading ? 'rgba(108,76,241,0.4)' : 'linear-gradient(135deg, #6C4CF1 0%, #a855f7 100%)',
+                  border: 'none', borderRadius: '14px', color: '#fff',
+                  fontWeight: 700, fontSize: '1rem',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 8px 32px rgba(108,76,241,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '0.5rem', letterSpacing: '0.3px',
+                  position: 'relative', overflow: 'hidden',
+                }}
+              >
+                {/* Shimmer sweep */}
+                {!isLoading && (
+                  <motion.span
+                    animate={{ x: ['-150%', '350%'] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: 'linear', repeatDelay: 1.5 }}
+                    style={{
+                      position: 'absolute', top: 0, left: 0,
+                      width: '40%', height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
+                      transform: 'skewX(-20deg)', pointerEvents: 'none',
+                    }}
+                  />
+                )}
+                {isLoading ? (
+                  <>
+                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ display: 'inline-block' }}>⏳</motion.span>
+                    Signing in...
+                  </>
+                ) : (
+                  <>Sign In →</>
+                )}
+              </motion.button>
+            </motion.div>
+          </motion.form>
+
+          {/* ── Divider ── */}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.5rem 0' }}
+          >
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', letterSpacing: '1px' }}>NEW HERE?</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+          </motion.div>
+
+          {/* ── Register link ── */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}>
+            <Link to="/register"
+              style={{ display: 'block', textAlign: 'center', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600, background: 'rgba(255,255,255,0.04)', transition: 'all 0.2s ease' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
+            >
+              Create a free account ✨
+            </Link>
+          </motion.div>
+        </motion.div>
+      </div>
+    </>
   );
 }
