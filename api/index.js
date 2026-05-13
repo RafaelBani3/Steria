@@ -5,6 +5,7 @@ import incomeRoutes from '../backend/src/routes/income.routes.js';
 import expenseRoutes from '../backend/src/routes/expense.routes.js';
 import savingRoutes from '../backend/src/routes/saving.routes.js';
 import budgetRoutes from '../backend/src/routes/budget.routes.js';
+import aiRoutes from '../backend/src/ai/ai.routes.js';
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/income', incomeRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/savings', savingRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
