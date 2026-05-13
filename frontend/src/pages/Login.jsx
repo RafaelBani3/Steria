@@ -148,8 +148,8 @@ export default function Login() {
               src={logo}
               alt="Steria Logo"
               style={{
-                width: '78px', height: '78px', objectFit: 'contain',
-                margin: '0 auto 1rem', display: 'block',
+                width: '88px', height: '88px', objectFit: 'contain',
+                margin: '0 auto 0.3rem', display: 'block',
                 filter: 'drop-shadow(0 0 22px rgba(108,76,241,0.7))',
                 animation: 'logoFloat 3.5s ease-in-out infinite',
               }}
