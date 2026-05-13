@@ -17,7 +17,7 @@ export default function Sidebar() {
       <div className="h-20 flex items-center px-8 border-b border-gray-50 dark:border-gray-800/50">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
-          <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Steria</span>
+          {/* <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Steria</span> */}
         </div>  
       </div>
       
