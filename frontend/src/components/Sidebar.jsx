@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Wallet, PieChart, Receipt, PiggyBank, BarChart3, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
+import logo from '../assets/logo2.png';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -15,11 +16,9 @@ export default function Sidebar() {
     <div className="w-64 h-full bg-white dark:bg-[#1E293B] border-r border-gray-100 dark:border-gray-800 flex flex-col transition-colors duration-200">
       <div className="h-20 flex items-center px-8 border-b border-gray-50 dark:border-gray-800/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6C4CF1] to-[#10B981] flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-purple-500/20">
-            S
-          </div>
+          <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
           <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Steria</span>
-        </div>
+        </div>  
       </div>
       
       <div className="flex-1 py-6 px-4 space-y-1">
