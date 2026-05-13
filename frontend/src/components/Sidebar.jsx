@@ -14,8 +14,8 @@ const navItems = [
 export default function Sidebar() {
   return (
     <div className="w-64 h-full bg-white dark:bg-[#1E293B] border-r border-gray-100 dark:border-gray-800 flex flex-col transition-colors duration-200">
-      <div className="h-24 flex items-center justify-center border-b border-gray-50 dark:border-gray-800/50">
-        <img src={logo} alt="Logo" style={{ width: '150px', height: '150px', objectFit: 'contain' }} />
+      <div className="flex items-center justify-center py-4 px-4 border-b border-gray-50 dark:border-gray-800/50">
+        <img src={logo} alt="Logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
       </div>
       
       <div className="flex-1 py-6 px-4 space-y-1">
