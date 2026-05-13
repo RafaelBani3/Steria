@@ -14,11 +14,8 @@ const navItems = [
 export default function Sidebar() {
   return (
     <div className="w-64 h-full bg-white dark:bg-[#1E293B] border-r border-gray-100 dark:border-gray-800 flex flex-col transition-colors duration-200">
-      <div className="h-20 flex items-center px-8 border-b border-gray-50 dark:border-gray-800/50">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
-          {/* <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Steria</span> */}
-        </div>  
+      <div className="h-24 flex items-center justify-center border-b border-gray-50 dark:border-gray-800/50">
+        <img src={logo} alt="Logo" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
       </div>
       
       <div className="flex-1 py-6 px-4 space-y-1">
