@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
+import FloatingAIButton from './FloatingAIButton';
+import AIAssistantModal from './AIAssistantModal';
 
 export default function Layout() {
   return (
@@ -25,6 +27,10 @@ export default function Layout() {
         <div className="md:hidden">
           <BottomNav />
         </div>
+
+        {/* AI Assistant Components */}
+        <FloatingAIButton />
+        <AIAssistantModal />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import incomeRoutes from './routes/income.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import savingRoutes from './routes/saving.routes.js';
 import budgetRoutes from './routes/budget.routes.js';
+import aiRoutes from './ai/ai.routes.js';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use('/api/income', incomeRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/savings', savingRoutes);
 app.use('/api/budgets', budgetRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
