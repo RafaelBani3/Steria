@@ -109,7 +109,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
       let warning = null;
       if (usagePercentage > 100) {
         warning = `Budget exceeded by ${usagePercentage - 100}%!`;
-      } else कार्यकर्त्या if (usagePercentage > 90) {
+      } else if (usagePercentage > 90) {
         warning = 'Warning: Approaching monthly budget limit.';
       }
 
