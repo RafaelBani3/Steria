@@ -9,17 +9,37 @@ datasource db {
 }
 
 model User {
+  id                  String         @id @default(uuid())
+  name                String
+  email               String         @unique
+  password            String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  avatarUrl           String?
+  bio                 String?
+  financialGoals      String?
+  monthlyIncomeTarget Float?
+  phoneNumber         String?
+  username            String?        @unique
+  budgets             Budget[]
+  expenses            Expense[]
+  incomes             Income[]
+  notifications       Notification[]
+  savings             Saving[]
+}
+
+model Notification {
   id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
+  userId    String
+  type      String   // "BUDGET_ALERT", "SAVINGS_MILESTONE", "SYSTEM_UPDATE", "GENERAL"
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  incomes  Income[]
-  budgets  Budget[]
-  expenses Expense[]
-  savings  Saving[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Income {
@@ -32,38 +52,35 @@ model Income {
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Budget {
-  id           String   @id @default(uuid())
-  name         String
-  method       String   // e.g., "50/30/20", "custom"
-  userId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  budgetItems  BudgetItem[]
+  id          String       @id @default(uuid())
+  name        String
+  method      String
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  budgetItems BudgetItem[]
 }
 
 model BudgetItem {
-  id         String   @id @default(uuid())
-  budgetId   String
-  category   String   // e.g., "Needs", "Wants", "Savings"
+  id          String    @id @default(uuid())
+  budgetId    String
+  category    String
   subCategory String?
-  percentage Float?   // optional for custom budgets
-  amount     Float    // allocated amount based on income
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  budget   Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  expenses Expense[]
+  percentage  Float?
+  amount      Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  budget      Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
 }
 
 model Expense {
-  id           String   @id @default(uuid())
+  id           String      @id @default(uuid())
   amount       Float
   category     String
   subCategory  String?
@@ -71,33 +88,30 @@ model Expense {
   description  String?
   userId       String
   budgetItemId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  budgetItem BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  budgetItem   BudgetItem? @relation(fields: [budgetItemId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Saving {
-  id           String   @id @default(uuid())
-  name         String   // e.g., "Emergency Fund"
-  targetAmount Float
-  currentAmount Float   @default(0)
-  userId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  savingsLogs SavingsLog[]
+  id            String       @id @default(uuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float        @default(0)
+  userId        String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savingsLogs   SavingsLog[]
 }
 
 model SavingsLog {
   id        String   @id @default(uuid())
   savingId  String
   amount    Float
-  type      String   // "DEPOSIT" or "WITHDRAWAL"
+  type      String
   date      DateTime @default(now())
   createdAt DateTime @default(now())
-
-  saving Saving @relation(fields: [savingId], references: [id], onDelete: Cascade)
+  saving    Saving   @relation(fields: [savingId], references: [id], onDelete: Cascade)
 }

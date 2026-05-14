@@ -4,7 +4,10 @@ import { Target, Plus, PiggyBank, X, Wallet, ArrowUpRight, TrendingUp, Edit3, Tr
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatIDR } from '../utils/formatCurrency';
 import CurrencyInput from '../components/CurrencyInput';
+import CustomSelect from '../components/CustomSelect';
 import Footer from '../components/Footer';
+import ConfirmModal from '../components/ConfirmModal';
+import { toast } from 'sonner';
 
 export default function SavingsTracker() {
   const { savings, addSaving, fetchSavings, updateSaving, deleteSaving, budgets, fetchBudgets, expenses, fetchExpenses, addExpense, addIncome, selectedMonth, selectedYear } = useFinanceStore();
@@ -20,6 +23,9 @@ export default function SavingsTracker() {
   const [amountToUpdate, setAmountToUpdate] = useState(0);
   const [selectedSource, setSelectedSource] = useState('');
   const [withdrawReason, setWithdrawReason] = useState('');
+  
+  const [isDeleting, setIsDeleting] = useState(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     fetchSavings();
@@ -27,20 +33,42 @@ export default function SavingsTracker() {
     fetchExpenses();
   }, []);
 
-  const handleCreateGoal = (e) => {
+  const handleCreateGoal = async (e) => {
     e.preventDefault();
     if (!name || targetAmount <= 0) return;
     
-    if (editingGoal) {
-      updateSaving(editingGoal.id, { name, targetAmount });
-    } else {
-      addSaving({ name, targetAmount });
+    setIsActionLoading(true);
+    try {
+      if (editingGoal) {
+        await updateSaving(editingGoal.id, { name, targetAmount });
+        toast.success('Goal tabungan diperbarui ✨');
+      } else {
+        await addSaving({ name, targetAmount });
+        toast.success('Goal tabungan baru dibuat 🚀');
+      }
+      setName('');
+      setTargetAmount(0);
+      setShowForm(false);
+      setEditingGoal(null);
+    } catch (err) {
+      toast.error('Terjadi kesalahan.');
+    } finally {
+      setIsActionLoading(false);
     }
-    
-    setName('');
-    setTargetAmount(0);
-    setShowForm(false);
-    setEditingGoal(null);
+  };
+
+  const handleDelete = async () => {
+    if (!isDeleting) return;
+    setIsActionLoading(true);
+    try {
+      await deleteSaving(isDeleting);
+      toast.success('Goal tabungan dihapus.');
+      setIsDeleting(null);
+    } catch (err) {
+      toast.error('Gagal menghapus goal.');
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const scrollToForm = () => {
@@ -57,44 +85,53 @@ export default function SavingsTracker() {
     scrollToForm();
   };
 
-  const handleConfirmUpdate = (e) => {
+  const handleConfirmUpdate = async (e) => {
     e.preventDefault();
     if (!updateGoal || amountToUpdate <= 0) return;
 
-    let newAmount = updateGoal.isDeposit 
-      ? updateGoal.currentAmount + Number(amountToUpdate) 
-      : updateGoal.currentAmount - Number(amountToUpdate);
-    
-    if (newAmount < 0) newAmount = 0;
+    setIsActionLoading(true);
+    try {
+      let newAmount = updateGoal.isDeposit 
+        ? updateGoal.currentAmount + Number(amountToUpdate) 
+        : updateGoal.currentAmount - Number(amountToUpdate);
+      
+      if (newAmount < 0) newAmount = 0;
 
-    // 1. Update the saving goal balance
-    updateSaving(updateGoal.id, { currentAmount: newAmount });
+      // 1. Update the saving goal balance
+      await updateSaving(updateGoal.id, { currentAmount: newAmount });
 
-    // 2. If it's a deposit, record it as a "Savings Expense" to reduce the savings budget
-    if (updateGoal.isDeposit) {
-      addExpense({
+      // 2. If it's a deposit, record it as a "Savings Expense"
+      if (updateGoal.isDeposit) {
+        await addExpense({
+            amount: Number(amountToUpdate),
+            category: 'Savings',
+            subCategory: selectedSource || 'General Savings',
+            description: `Deposit to ${updateGoal.name}`,
+            notes: `goal_id:${updateGoal.id}`,
+            date: new Date().toISOString()
+        });
+        toast.success(`Berhasil deposit ke ${updateGoal.name} ✨`);
+      } else {
+        // 3. If it's a withdrawal, record it as "Income"
+        await addIncome({
           amount: Number(amountToUpdate),
-          category: 'Savings',
-          subCategory: selectedSource || 'General Savings',
-          description: `Deposit to ${updateGoal.name}`,
-          notes: `goal_id:${updateGoal.id}`,
+          source: `Withdrawal: ${updateGoal.name}`,
+          category: 'Savings Withdrawal',
+          notes: withdrawReason || 'Withdrawn for usage',
           date: new Date().toISOString()
-      });
-    } else {
-      // 3. If it's a withdrawal, record it as "Income" to put it back into unallocated/budget
-      addIncome({
-        amount: Number(amountToUpdate),
-        source: `Withdrawal: ${updateGoal.name}`,
-        category: 'Savings Withdrawal',
-        notes: withdrawReason || 'Withdrawn for usage',
-        date: new Date().toISOString()
-      });
-    }
+        });
+        toast.success(`Berhasil tarik tunai dari ${updateGoal.name}`);
+      }
 
-    setUpdateGoal(null);
-    setAmountToUpdate(0);
-    setSelectedSource('');
-    setWithdrawReason('');
+      setUpdateGoal(null);
+      setAmountToUpdate(0);
+      setSelectedSource('');
+      setWithdrawReason('');
+    } catch (err) {
+      toast.error('Gagal memperbarui saldo tabungan.');
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const openDeposit = (goal) => {
@@ -147,15 +184,15 @@ export default function SavingsTracker() {
   const overallProgress = totalTarget > 0 ? (totalSavings / totalTarget) * 100 : 0;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-24 md:pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Savings Tracker</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your goals and track your saving discipline.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Manage your goals and track your saving discipline.</p>
         </div>
         <button 
           onClick={() => { setShowForm(true); scrollToForm(); }}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           New Goal
@@ -163,54 +200,58 @@ export default function SavingsTracker() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="md:col-span-2 bg-gradient-to-br from-[#6C4CF1] to-[#8B5CF6] rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:col-span-2 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#4F46E5] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <PiggyBank className="w-48 h-48" />
           </div>
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-6 bg-white/10 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-2 mb-6 bg-white/10 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10">
               <TrendingUp className="w-3 h-3" />
               Wealth Overview
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div>
-                <p className="text-white/60 text-sm font-medium mb-1">Total Accumulated</p>
-                <h2 className="text-4xl font-black">{formatIDR(totalSavings)}</h2>
+                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">Total Accumulated</p>
+                <h2 className="text-4xl font-black tracking-tighter">{formatIDR(totalSavings)}</h2>
               </div>
               <div className="text-right sm:text-left">
-                <p className="text-white/60 text-sm font-medium mb-1">Total Target</p>
-                <h2 className="text-2xl font-bold">{formatIDR(totalTarget)}</h2>
+                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">Total Target</p>
+                <h2 className="text-2xl font-black tracking-tighter">{formatIDR(totalTarget)}</h2>
               </div>
             </div>
             
-            <div className="mt-8 space-y-3">
-              <div className="flex justify-between text-sm font-bold">
+            <div className="mt-10 space-y-3">
+              <div className="flex justify-between text-xs font-black uppercase tracking-widest">
                 <span>Overall Completion</span>
                 <span>{overallProgress.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-3">
+              <div className="w-full bg-white/10 rounded-full h-4 p-1 backdrop-blur-md">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${overallProgress}%` }}
-                  className="bg-white h-full rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                  className="bg-white h-full rounded-full shadow-[0_0_20px_rgba(255,255,255,0.6)]"
                 />
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-[#1E293B] p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-6">
-            <Wallet className="w-6 h-6" />
+        <div className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6">
+            <Wallet className="w-7 h-7" />
           </div>
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Monthly Savings Budget</h3>
-          <p className="text-2xl font-black mb-4">{formatIDR(totalSavingsBudget)}</p>
-          <div className="text-[10px] text-gray-500 font-medium leading-relaxed">
+          <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Monthly Budget</h3>
+          <p className="text-2xl font-black mb-4 tracking-tighter">{formatIDR(totalSavingsBudget)}</p>
+          <div className="text-[10px] text-gray-500 font-medium leading-relaxed italic">
             This budget is based on your chosen pattern in the Budgeting menu. Use this as your monthly saving goal.
           </div>
           <button 
             onClick={() => window.location.href = '/budgets'}
-            className="mt-6 w-full py-3 border border-gray-100 dark:border-gray-800 rounded-2xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+            className="mt-8 w-full py-4 border border-gray-100 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             Adjust Budget <ArrowUpRight className="w-3 h-3" />
           </button>
@@ -221,25 +262,31 @@ export default function SavingsTracker() {
         {showForm && (
           <motion.div 
             ref={formRef}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#1E293B] p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8"
+            className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-[3rem] shadow-2xl border border-gray-100 dark:border-white/5 mb-8"
           >
-            <h3 className="text-xl font-black mb-6">{editingGoal ? 'Edit Goal' : 'Create New Goal'}</h3>
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-black">{editingGoal ? 'Edit Goal' : 'Create New Goal'}</h3>
+              <button onClick={() => { setShowForm(false); setEditingGoal(null); }} className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            
             <form onSubmit={handleCreateGoal} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Goal Name</label>
-                <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-purple-500 rounded-2xl px-5 py-3 outline-none font-medium" placeholder="e.g. New iPhone, Travel" />
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Goal Name</label>
+                <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 rounded-2xl px-6 py-4 outline-none font-bold transition-all" placeholder="e.g. New iPhone, Travel" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Target Amount</label>
-                <CurrencyInput required value={targetAmount} onChange={setTargetAmount} className="w-full bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-purple-500 rounded-2xl px-5 py-3 outline-none font-black text-lg" placeholder="0" />
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Target Amount</label>
+                <CurrencyInput required value={targetAmount} onChange={setTargetAmount} className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 rounded-2xl px-6 py-4 outline-none font-black text-xl transition-all" placeholder="0" />
               </div>
               <div className="md:col-span-2 flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => { setShowForm(false); setEditingGoal(null); }} className="px-6 py-3 text-gray-500 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 rounded-2xl transition-colors">Cancel</button>
-                <button type="submit" className="px-10 py-3 bg-purple-600 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/20 hover:scale-105 transition-transform">
-                  {editingGoal ? 'Update Goal' : 'Create Goal'}
+                <button type="button" onClick={() => { setShowForm(false); setEditingGoal(null); }} className="px-8 py-4 text-gray-500 font-bold hover:bg-gray-50 dark:hover:bg-white/5 rounded-2xl transition-all">Cancel</button>
+                <button type="submit" disabled={isActionLoading} className="px-12 py-4 bg-purple-600 text-white font-bold rounded-2xl shadow-xl shadow-purple-500/20 active:scale-95 transition-all">
+                  {isActionLoading ? 'Processing...' : (editingGoal ? 'Update Goal' : 'Launch Goal')}
                 </button>
               </div>
             </form>
@@ -254,39 +301,48 @@ export default function SavingsTracker() {
             <motion.div
               key={goal.id}
               layout
-              className="bg-white dark:bg-[#1E293B] p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col hover:border-purple-200 dark:hover:border-purple-900/30 transition-all"
+              className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-[3rem] shadow-sm border border-gray-100 dark:border-white/5 flex flex-col group hover:border-purple-500/30 transition-all"
             >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                    <Target className="w-6 h-6" />
+              <div className="flex justify-between items-start mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                    <Target className="w-7 h-7" />
                   </div>
                   <div>
-                    <h3 className="font-black text-lg text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
-                    <p className="text-xs text-gray-400 font-medium">Goal: {progress.toFixed(0)}% achieved</p>
+                    <h3 className="font-black text-xl text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-purple-600 font-bold uppercase tracking-widest">{progress.toFixed(0)}% achieved</span>
+                      <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-800" />
+                      <span className="text-[10px] text-gray-400 font-medium">Milestone Tracking</span>
+                    </div>
                   </div>
                 </div>
-                {/* Always visible on mobile */}
                 <div className="flex items-center gap-1">
-                  <button onClick={() => startEditing(goal)} className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-xl transition-all">
+                  <button onClick={() => startEditing(goal)} className="p-2.5 text-gray-400 hover:text-purple-500 hover:bg-purple-500/10 rounded-xl transition-all">
                     <Edit3 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { if(confirm('Delete this goal?')) deleteSaving(goal.id) }} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">
+                  <button onClick={() => setIsDeleting(goal.id)} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between text-sm font-bold">
-                  <span className="text-gray-900 dark:text-white">{formatIDR(goal.currentAmount)}</span>
-                  <span className="text-gray-400">Target: {formatIDR(goal.targetAmount)}</span>
+              <div className="space-y-4 mb-10">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Accumulated</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">{formatIDR(goal.currentAmount)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Target</p>
+                    <p className="text-sm font-bold text-gray-500">{formatIDR(goal.targetAmount)}</p>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-4 overflow-hidden p-1">
+                <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-5 p-1.5 backdrop-blur-md">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    className="bg-gradient-to-r from-purple-600 to-emerald-500 h-full rounded-full"
+                    animate={{ width: `${Math.min(progress, 100)}%` }}
+                    className="bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-500 h-full rounded-full shadow-[0_0_15px_rgba(139,92,246,0.3)]"
                   />
                 </div>
               </div>
@@ -294,13 +350,13 @@ export default function SavingsTracker() {
               <div className="grid grid-cols-2 gap-4 mt-auto">
                 <button 
                   onClick={() => setUpdateGoal({ ...goal, isDeposit: false })} 
-                  className="py-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all"
+                  className="py-4 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all active:scale-95"
                 >
                   Withdraw
                 </button>
                 <button 
                   onClick={() => openDeposit(goal)} 
-                  className="py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/20 transition-all"
+                  className="py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/20 transition-all active:scale-95"
                 >
                   Deposit
                 </button>
@@ -312,46 +368,45 @@ export default function SavingsTracker() {
 
       <AnimatePresence>
         {updateGoal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-[#1E293B] w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-[#0a0a0a]/80 w-full max-w-md rounded-[3rem] p-10 shadow-2xl relative overflow-visible border border-white/10 backdrop-blur-2xl"
             >
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-600 to-emerald-600" />
-              <button onClick={() => setUpdateGoal(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-600 transition-colors"><X className="w-6 h-6" /></button>
+              <button onClick={() => setUpdateGoal(null)} className="absolute top-8 right-8 text-gray-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
               
-              <div className="flex items-center gap-4 mb-8">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${updateGoal.isDeposit ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                  <Wallet className="w-6 h-6" />
+              <div className="flex items-center gap-5 mb-10">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${updateGoal.isDeposit ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                  <Wallet className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black">{updateGoal.isDeposit ? 'Deposit' : 'Withdraw'}</h3>
-                  <p className="text-gray-500 text-sm font-medium">{updateGoal.name}</p>
+                  <h3 className="text-2xl font-black">{updateGoal.isDeposit ? 'Deposit Funds' : 'Withdraw Funds'}</h3>
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">{updateGoal.name}</p>
                 </div>
               </div>
               
               <form onSubmit={handleConfirmUpdate} className="space-y-6">
                 {updateGoal.isDeposit && (
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Source (Savings Budget)</label>
-                    <select 
-                      required 
-                      value={selectedSource} 
-                      onChange={e => handleSourceChange(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-2xl px-5 py-3 outline-none font-bold"
-                    >
-                      <option value="">Select Savings Item</option>
-                      {savingsBudgetItems.map(item => (
-                        <option key={item.id} value={item.subCategory}>{item.subCategory} ({formatIDR(item.amount)})</option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect 
+                    label="Source (Savings Budget)"
+                    value={selectedSource}
+                    onChange={handleSourceChange}
+                    placeholder="Select Savings Item"
+                    options={[
+                      { label: 'Select Savings Item', value: '' },
+                      ...savingsBudgetItems.map(item => ({ 
+                        label: `${item.subCategory} (${formatIDR(item.amount)})`, 
+                        value: item.subCategory 
+                      }))
+                    ]}
+                  />
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">
                     Amount to {updateGoal.isDeposit ? 'Add' : 'Take'}
                   </label>
                   <CurrencyInput 
@@ -359,33 +414,33 @@ export default function SavingsTracker() {
                     value={amountToUpdate} 
                     onChange={setAmountToUpdate} 
                     disabled={updateGoal.isDeposit && selectedSource !== ''}
-                    className={`w-full text-4xl font-black bg-transparent border-b-2 border-gray-100 dark:border-gray-800 focus:border-purple-600 pb-4 outline-none transition-colors ${updateGoal.isDeposit && selectedSource !== '' ? 'opacity-60 cursor-not-allowed' : ''}`} 
+                    className={`w-full text-4xl font-black bg-transparent border-b-2 border-gray-100 dark:border-white/10 focus:border-purple-500 pb-4 outline-none transition-colors tracking-tighter ${updateGoal.isDeposit && selectedSource !== '' ? 'opacity-60 cursor-not-allowed' : ''}`} 
                     placeholder="0" 
                   />
                   {updateGoal.isDeposit && selectedSource !== '' && (
-                    <p className="mt-2 text-[10px] text-purple-600 font-bold animate-pulse">✨ Full remaining budget will be deposited.</p>
+                    <p className="mt-3 text-[10px] text-purple-500 font-bold animate-pulse">✨ Full remaining budget will be deposited automatically.</p>
                   )}
                 </div>
 
                 {!updateGoal.isDeposit && (
                   <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Reason for Withdrawal</label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Reason for Withdrawal</label>
                     <input 
                       required 
                       type="text" 
                       value={withdrawReason} 
                       onChange={e => setWithdrawReason(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-2xl px-5 py-3 outline-none font-bold"
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 rounded-2xl px-5 py-4 outline-none font-bold"
                       placeholder="e.g. Bought Laptop, Emergency"
                     />
-                    <p className="mt-2 text-[10px] text-gray-400 font-medium italic">This amount will be added back to your unallocated monthly balance.</p>
+                    <p className="mt-3 text-[10px] text-gray-400 font-medium italic">This amount will be added back to your unallocated monthly balance.</p>
                   </div>
                 )}
 
-                <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={() => setUpdateGoal(null)} className="flex-1 py-4 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-2xl">Cancel</button>
-                  <button type="submit" className={`flex-1 py-4 text-white font-bold rounded-2xl shadow-xl transition-all ${updateGoal.isDeposit ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-red-600 shadow-red-500/20'}`}>
-                    Confirm
+                <div className="flex gap-4 pt-6">
+                  <button type="button" onClick={() => setUpdateGoal(null)} className="flex-1 py-4 bg-gray-100 dark:bg-white/5 text-gray-500 font-bold rounded-2xl active:scale-95 transition-all">Cancel</button>
+                  <button type="submit" disabled={isActionLoading} className={`flex-1 py-4 text-white font-bold rounded-2xl shadow-2xl active:scale-95 transition-all ${updateGoal.isDeposit ? 'bg-emerald-600 shadow-emerald-500/30' : 'bg-red-600 shadow-red-500/30'}`}>
+                    {isActionLoading ? 'Processing...' : 'Confirm'}
                   </button>
                 </div>
               </form>
@@ -393,6 +448,16 @@ export default function SavingsTracker() {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal 
+        isOpen={!!isDeleting}
+        onClose={() => setIsDeleting(null)}
+        onConfirm={handleDelete}
+        title="Delete Savings Goal?"
+        message="This will permanently delete this goal and all its progress. This action is irreversible."
+        isLoading={isActionLoading}
+      />
+
       <Footer />
     </div>
   );
