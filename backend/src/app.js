@@ -7,6 +7,8 @@ import expenseRoutes from './routes/expense.routes.js';
 import savingRoutes from './routes/saving.routes.js';
 import budgetRoutes from './routes/budget.routes.js';
 import aiRoutes from './ai/ai.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 dotenv.config();
 
@@ -15,6 +17,8 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
   'http://localhost:3000',
   'https://steria-finance-app.vercel.app'
 ];
@@ -44,6 +48,8 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/savings', savingRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

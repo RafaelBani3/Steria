@@ -55,4 +55,19 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem('steria_user');
     set({ user: null, token: null });
   },
+
+  updateUser: async (data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.patch('/users/profile', data);
+      const updatedUser = response.data;
+      localStorage.setItem('steria_user', JSON.stringify(updatedUser));
+      set({ user: updatedUser, isLoading: false });
+      return true;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      set({ error: extractErrorMessage(error, 'Update profile failed'), isLoading: false });
+      return false;
+    }
+  },
 }));

@@ -13,6 +13,8 @@ import { useAuthStore } from './store/useAuthStore';
 
 import Analytics from './pages/Analytics';
 
+import { Toaster } from 'sonner';
+
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const token = useAuthStore((state) => state.token);
@@ -22,6 +24,22 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
+      <Toaster 
+        position="top-right" 
+        richColors 
+        closeButton
+        theme="dark"
+        toastOptions={{
+          style: {
+            background: 'rgba(10, 10, 10, 0.8)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '16px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          },
+        }}
+      />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

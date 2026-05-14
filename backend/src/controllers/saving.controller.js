@@ -1,4 +1,5 @@
 import prisma from '../prisma/index.js';
+import { checkSavingsMilestones } from '../utils/notification.utils.js';
 
 export const getSavings = async (req, res) => {
   try {
@@ -7,24 +8,34 @@ export const getSavings = async (req, res) => {
     });
     res.json(savings);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Get Savings Error:', error);
+    res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-2001)' });
   }
 };
 
 export const createSaving = async (req, res) => {
   try {
     const { name, targetAmount, currentAmount } = req.body;
+    const userId = req.user.userId;
+
     const saving = await prisma.saving.create({
       data: {
         name,
         targetAmount: parseFloat(targetAmount),
         currentAmount: parseFloat(currentAmount || 0),
-        userId: req.user.userId
+        userId
       }
     });
+
+    // Initial check for milestones if currentAmount > 0
+    if (saving.currentAmount > 0) {
+      checkSavingsMilestones(userId, saving.id);
+    }
+
     res.status(201).json(saving);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Create Saving Error:', error);
+    res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-2002)' });
   }
 };
 
@@ -32,9 +43,10 @@ export const updateSaving = async (req, res) => {
   try {
     const { id } = req.params;
     const { currentAmount, name, targetAmount } = req.body;
+    const userId = req.user.userId;
     
     const existing = await prisma.saving.findUnique({ where: { id } });
-    if (!existing || existing.userId !== req.user.userId) {
+    if (!existing || existing.userId !== userId) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -47,9 +59,16 @@ export const updateSaving = async (req, res) => {
       where: { id },
       data
     });
+
+    // Check milestones if amount was updated
+    if (currentAmount !== undefined) {
+      checkSavingsMilestones(userId, saving.id);
+    }
+
     res.json(saving);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Update Saving Error:', error);
+    res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-2003)' });
   }
 };
 
@@ -62,8 +81,9 @@ export const deleteSaving = async (req, res) => {
     }
 
     await prisma.saving.delete({ where: { id } });
-    res.status(204).send();
+    res.json({ message: 'Savings goal successfully deleted.' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Delete Saving Error:', error);
+    res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-2004)' });
   }
 };
