@@ -12,7 +12,7 @@ const ProfileCard = ({ title, children, icon: Icon, delay = 0 }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay }}
-    className="relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/5 p-8 backdrop-blur-xl group hover:border-white/10 transition-all"
+    className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] border border-white/5 bg-white/5 p-6 md:p-8 backdrop-blur-xl group hover:border-white/10 transition-all"
   >
     <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-purple-500/5 blur-[50px] group-hover:bg-purple-500/10 transition-all" />
     <div className="relative z-10">
@@ -134,7 +134,7 @@ export default function Profile() {
       {/* Premium Header */}
       <div className="relative overflow-hidden rounded-[3.5rem] border border-white/5 bg-[#0a0a0a] shadow-2xl">
         {/* Cover Image / Gradient */}
-        <div className="h-48 md:h-64 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#10B981] relative overflow-hidden">
+        <div className="h-40 md:h-64 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#10B981] relative overflow-hidden">
           <motion.div 
             animate={{ 
               scale: [1, 1.2, 1],
@@ -143,7 +143,7 @@ export default function Profile() {
             transition={{ duration: 20, repeat: Infinity }}
             className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-[100px]" 
           />
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
           
           <div className="absolute top-6 right-6 md:top-8 md:right-8 flex gap-3 z-20">
             <AnimatePresence mode="wait">
@@ -189,21 +189,21 @@ export default function Profile() {
         <div className="px-8 md:px-12 pb-12 relative">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 md:-mt-20 z-20 relative">
             <div className="relative">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[3rem] bg-[#0a0a0a] p-2 shadow-2xl border-4 border-[#0a0a0a]">
-                <div className="w-full h-full rounded-[2.5rem] bg-white/5 flex items-center justify-center text-white/20 relative overflow-hidden group">
+              <div className="w-28 h-28 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3rem] bg-[#0a0a0a] p-1 md:p-2 shadow-2xl border-4 border-[#0a0a0a]">
+                <div className="w-full h-full rounded-[2.2rem] md:rounded-[2.5rem] bg-white/5 flex items-center justify-center text-white/20 relative overflow-hidden group">
                   {formData.profilePic ? (
                     <img src={formData.profilePic} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-16 h-16" />
+                    <User className="w-12 h-12 md:w-16 md:h-16" />
                   )}
                   <button className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-white text-[10px] font-black uppercase tracking-widest">
-                    <Camera size={20} />
+                    <Camera size={16} />
                     <span>Upload</span>
                   </button>
                 </div>
               </div>
-              <div className="absolute bottom-2 right-2 h-9 w-9 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg border-4 border-[#0a0a0a]">
-                <Check className="w-5 h-5" />
+              <div className="absolute bottom-1 right-1 md:bottom-2 md:right-2 h-7 w-7 md:h-9 md:w-9 rounded-xl md:rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg border-2 md:border-4 border-[#0a0a0a]">
+                <Check className="w-4 h-4 md:w-5 md:h-5" />
               </div>
             </div>
             
@@ -257,7 +257,7 @@ export default function Profile() {
                   <InfoRow icon={Zap} label="Monthly Income Target" value={user?.incomeTarget ? formatIDR(user.incomeTarget) : 'Not set'} field="incomeTarget" type="number" />
                   <InfoRow icon={Award} label="Main Financial Goal" value={user?.financialGoals || 'Not set'} field="financialGoals" />
                 </div>
-                <div className="mt-6 p-8 rounded-[2.5rem] bg-gradient-to-br from-purple-500/10 to-emerald-500/10 border border-white/5 relative overflow-hidden group">
+                <div className="mt-6 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-purple-500/10 to-emerald-500/10 border border-white/5 relative overflow-hidden group">
                   <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl group-hover:bg-emerald-500/10 transition-all duration-1000" />
                   <div className="flex items-center justify-between mb-4">
                     <div>

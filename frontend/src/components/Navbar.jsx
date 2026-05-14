@@ -80,20 +80,20 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
-        <div className="flex items-center gap-2 bg-purple-500/5 dark:bg-white/5 px-2 py-1 rounded-2xl border border-purple-500/10 dark:border-white/10 group hover:border-purple-500/30 transition-all">
-          <Calendar className="w-4 h-4 text-purple-500 shrink-0" />
+        <div className="flex items-center gap-1 md:gap-2 bg-purple-500/5 dark:bg-white/5 px-1.5 md:px-2 py-1 rounded-2xl border border-purple-500/10 dark:border-white/10 group hover:border-purple-500/30 transition-all">
+          <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0 hidden sm:block" />
           <CustomSelect 
             value={selectedMonth}
             onChange={(val) => setSelectedPeriod(val, selectedYear)}
-            options={MONTHS.map((m, i) => ({ label: m, value: i }))}
-            className="w-32"
+            options={MONTHS.map((m, i) => ({ label: m.substring(0, 3), value: i }))}
+            className="w-16 sm:w-32"
           />
-          <div className="h-4 w-[1px] bg-gray-200 dark:bg-white/10 mx-1" />
+          <div className="h-4 w-[1px] bg-gray-200 dark:bg-white/10 mx-0.5 md:mx-1" />
           <CustomSelect 
             value={selectedYear}
             onChange={(val) => setSelectedPeriod(selectedMonth, val)}
             options={[2025, 2026, 2027].map(y => ({ label: y.toString(), value: y }))}
-            className="w-24"
+            className="w-16 sm:w-24"
           />
         </div>
 

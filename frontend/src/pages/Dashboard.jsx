@@ -129,7 +129,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {[
           { label: 'Surplus', value: monthlySurplus, icon: Wallet, color: 'purple', isPositive: monthlySurplus >= 0 },
           { label: 'Saving Rate', value: `${savingsRate.toFixed(1)}%`, icon: TrendingUp, color: 'emerald' },
@@ -139,15 +139,15 @@ export default function Dashboard() {
           <motion.div 
             key={i}
             variants={itemVariants} 
-            className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5"
+            className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5"
           >
-            <div className="flex flex-col gap-3">
-              <div className={`w-10 h-10 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-${stat.color}-500`}>
-                <stat.icon size={20} />
+            <div className="flex flex-col gap-2 md:gap-3">
+              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-${stat.color}-500`}>
+                <stat.icon size={16} className="md:w-5 md:h-5" />
               </div>
               <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">{stat.label}</p>
-                <h3 className={`text-lg md:text-xl font-black mt-1 tracking-tighter ${stat.isPositive === false ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                <p className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">{stat.label}</p>
+                <h3 className={`text-sm md:text-xl font-black mt-0.5 md:mt-1 tracking-tighter ${stat.isPositive === false ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
                   {typeof stat.value === 'number' ? formatIDR(stat.value) : stat.value}
                 </h3>
               </div>

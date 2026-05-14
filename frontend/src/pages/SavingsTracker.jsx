@@ -203,7 +203,7 @@ export default function SavingsTracker() {
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="md:col-span-2 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#4F46E5] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden"
+          className="md:col-span-2 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#4F46E5] rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 text-white shadow-2xl relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <PiggyBank className="w-48 h-48" />
@@ -213,14 +213,14 @@ export default function SavingsTracker() {
               <TrendingUp className="w-3 h-3" />
               Wealth Overview
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
               <div>
-                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">Total Accumulated</p>
-                <h2 className="text-4xl font-black tracking-tighter">{formatIDR(totalSavings)}</h2>
+                <p className="text-white/60 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 md:mb-2">Total Accumulated</p>
+                <h2 className="text-3xl md:text-4xl font-black tracking-tighter">{formatIDR(totalSavings)}</h2>
               </div>
-              <div className="text-right sm:text-left">
-                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-2">Total Target</p>
-                <h2 className="text-2xl font-black tracking-tighter">{formatIDR(totalTarget)}</h2>
+              <div className="text-left">
+                <p className="text-white/60 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 md:mb-2">Total Target</p>
+                <h2 className="text-xl md:text-2xl font-black tracking-tighter">{formatIDR(totalTarget)}</h2>
               </div>
             </div>
             
@@ -240,7 +240,7 @@ export default function SavingsTracker() {
           </div>
         </motion.div>
 
-        <div className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm">
+        <div className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm">
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6">
             <Wallet className="w-7 h-7" />
           </div>
@@ -301,19 +301,19 @@ export default function SavingsTracker() {
             <motion.div
               key={goal.id}
               layout
-              className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-8 rounded-[3rem] shadow-sm border border-gray-100 dark:border-white/5 flex flex-col group hover:border-purple-500/30 transition-all"
+              className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-gray-100 dark:border-white/5 flex flex-col group hover:border-purple-500/30 transition-all"
             >
               <div className="flex justify-between items-start mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
-                    <Target className="w-7 h-7" />
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                    <Target className="w-5 h-5 md:w-7 md:h-7" />
                   </div>
                   <div>
-                    <h3 className="font-black text-xl text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-purple-600 font-bold uppercase tracking-widest">{progress.toFixed(0)}% achieved</span>
+                    <h3 className="font-black text-base md:text-xl text-gray-900 dark:text-white leading-tight">{goal.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5 md:mt-1">
+                      <span className="text-[8px] md:text-[10px] text-purple-600 font-bold uppercase tracking-widest">{progress.toFixed(0)}% achieved</span>
                       <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-800" />
-                      <span className="text-[10px] text-gray-400 font-medium">Milestone Tracking</span>
+                      <span className="text-[8px] md:text-[10px] text-gray-400 font-medium">Milestone</span>
                     </div>
                   </div>
                 </div>
@@ -330,12 +330,12 @@ export default function SavingsTracker() {
               <div className="space-y-4 mb-10">
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Accumulated</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">{formatIDR(goal.currentAmount)}</p>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5 md:mb-1">Accumulated</p>
+                    <p className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tighter">{formatIDR(goal.currentAmount)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Target</p>
-                    <p className="text-sm font-bold text-gray-500">{formatIDR(goal.targetAmount)}</p>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5 md:mb-1">Target</p>
+                    <p className="text-[10px] md:text-sm font-bold text-gray-500">{formatIDR(goal.targetAmount)}</p>
                   </div>
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-white/5 rounded-full h-5 p-1.5 backdrop-blur-md">
