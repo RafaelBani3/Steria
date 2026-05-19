@@ -8,3 +8,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Keep the event loop alive explicitly for debugging
+setInterval(() => {}, 60000);

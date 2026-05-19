@@ -1,17 +1,14 @@
-import { Bell, Search, User, Calendar, LogOut, Settings as SettingsIcon, Shield, UserCircle, CheckCircle2, AlertCircle, X, Check } from 'lucide-react';
-import { useFinanceStore } from '../store/useFinanceStore';
+import { Bell, User, LogOut, Settings as SettingsIcon, Shield, UserCircle, CheckCircle2, AlertCircle, X, Check } from 'lucide-react';
 import { useNotificationStore } from '../store/useNotificationStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import CustomSelect from './CustomSelect';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function Navbar() {
-  const { selectedMonth, selectedYear, setSelectedPeriod } = useFinanceStore();
   const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotificationStore();
   const { user, logout } = useAuthStore();
   
@@ -61,125 +58,72 @@ export default function Navbar() {
   };
 
   return (
-    <div className="h-20 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50 transition-colors duration-200">
-      <div className="flex items-center gap-4 md:hidden">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6C4CF1] to-[#10B981] flex items-center justify-center text-white font-bold shadow-lg">
-          S
-        </div>
-      </div>
-      
-      <div className="hidden md:flex flex-1 max-w-md">
-        <div className="relative w-full group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 focus:bg-white dark:focus:bg-white/10 rounded-2xl py-2.5 pl-10 pr-4 text-sm outline-none transition-all dark:text-white"
-          />
-        </div>
+    <div style={{ height: 64, background: 'rgba(8,13,30,0.92)', backdropFilter: 'blur(24px)', borderBottom: '1px solid var(--clr-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 50, flexShrink: 0 }}>
+      {/* Mobile brand */}
+      <div className="flex md:hidden" style={{ alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 10, background: 'var(--grad-purple)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 14, boxShadow: '0 0 16px var(--clr-purple-glow)' }}>S</div>
+        <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--clr-text)', fontFamily: 'Space Grotesk, sans-serif' }}>Steria</span>
       </div>
 
-      <div className="flex items-center gap-3 ml-auto">
-        <div className="flex items-center gap-1 md:gap-2 bg-purple-500/5 dark:bg-white/5 px-1.5 md:px-2 py-1 rounded-2xl border border-purple-500/10 dark:border-white/10 group hover:border-purple-500/30 transition-all">
-          <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0 hidden sm:block" />
-          <CustomSelect 
-            value={selectedMonth}
-            onChange={(val) => setSelectedPeriod(val, selectedYear)}
-            options={MONTHS.map((m, i) => ({ label: m.substring(0, 3), value: i }))}
-            className="w-16 sm:w-32"
-          />
-          <div className="h-4 w-[1px] bg-gray-200 dark:bg-white/10 mx-0.5 md:mx-1" />
-          <CustomSelect 
-            value={selectedYear}
-            onChange={(val) => setSelectedPeriod(selectedMonth, val)}
-            options={[2025, 2026, 2027].map(y => ({ label: y.toString(), value: y }))}
-            className="w-16 sm:w-24"
-          />
-        </div>
+      {/* Desktop spacer */}
+      <div className="hidden md:block" style={{ flex: 1 }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
         {/* Notifications */}
         <div className="relative" ref={notificationRef}>
-          <button 
+          <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`p-2.5 rounded-2xl transition-all relative ${showNotifications ? 'bg-purple-500/10 text-purple-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'}`}
+            style={{ padding: '8px', borderRadius: 12, background: showNotifications ? 'rgba(124,58,237,0.12)' : 'transparent', border: 'none', cursor: 'pointer', color: showNotifications ? 'var(--clr-purple-mid)' : 'var(--clr-text-3)', position: 'relative', transition: 'all 0.2s' }}
           >
-            <Bell className="w-5 h-5" />
+            <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#0a0a0a] animate-pulse"></span>
+              <span style={{ position: 'absolute', top: 8, right: 8, width: 7, height: 7, background: 'var(--clr-rose)', borderRadius: '50%', border: '2px solid var(--clr-bg)' }} />
             )}
           </button>
 
           <AnimatePresence>
             {showNotifications && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 15, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                className="absolute right-0 mt-3 w-80 md:w-96 bg-white dark:bg-[#0a0a0a]/90 rounded-3xl shadow-2xl border border-gray-100 dark:border-white/10 p-4 z-50 backdrop-blur-2xl"
+                style={{ position: 'absolute', right: 0, marginTop: 8, width: 340, background: '#0d1324', border: '1px solid var(--clr-border)', borderRadius: 20, padding: 16, zIndex: 200, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
               >
-                <div className="flex justify-between items-center mb-5 px-2">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
-                    <p className="text-[10px] text-gray-500 font-medium">You have {unreadCount} unread messages</p>
+                    <h3 style={{ fontWeight: 700, color: 'var(--clr-text)', fontSize: 15 }}>Notifications</h3>
+                    <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>{unreadCount} unread</p>
                   </div>
                   {unreadCount > 0 && (
-                    <button 
-                      onClick={markAllAsRead}
-                      className="text-[10px] bg-purple-500/10 text-purple-500 px-3 py-1.5 rounded-full font-bold hover:bg-purple-500 hover:text-white transition-all flex items-center gap-1"
-                    >
-                      <Check className="w-3 h-3" /> Mark all read
+                    <button onClick={markAllAsRead} style={{ fontSize: 11, background: 'rgba(124,58,237,0.1)', color: 'var(--clr-purple-mid)', padding: '4px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                      Mark all read
                     </button>
                   )}
                 </div>
 
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                   {notifications.length === 0 ? (
-                    <div className="py-12 flex flex-col items-center justify-center text-center">
-                      <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-3">
-                        <Bell className="w-8 h-8 text-gray-300 dark:text-gray-700" />
-                      </div>
-                      <p className="text-xs font-bold text-gray-400">All caught up!</p>
-                      <p className="text-[10px] text-gray-500">No notifications for now.</p>
+                    <div style={{ padding: '32px 0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
+                      <p style={{ fontSize: 13, color: 'var(--clr-text-3)' }}>All caught up!</p>
                     </div>
                   ) : (
-                    notifications.map(n => (
-                      <motion.div 
-                        key={n.id} 
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`flex gap-3 p-3 rounded-2xl transition-all cursor-pointer group relative ${n.isRead ? 'opacity-60 grayscale-[0.5]' : 'bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                        onClick={() => !n.isRead && markAsRead(n.id)}
-                      >
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${getNotificationColor(n.type)}`}>
-                          {getNotificationIcon(n.type)}
+                    notifications.slice(0, 8).map((n) => (
+                      <div key={n.id} onClick={() => !n.isRead && markAsRead(n.id)} style={{ display: 'flex', gap: 10, padding: '10px 12px', borderRadius: 12, marginBottom: 6, cursor: 'pointer', background: n.isRead ? 'transparent' : 'rgba(124,58,237,0.06)', border: `1px solid ${n.isRead ? 'transparent' : 'rgba(124,58,237,0.12)'}`, position: 'relative' }}>
+                        <div style={{ fontSize: 18, flexShrink: 0 }}>{n.type === 'BUDGET_ALERT' ? '⚠️' : n.type === 'SAVINGS_MILESTONE' ? '🎯' : '🔔'}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</p>
+                          <p style={{ fontSize: 11, color: 'var(--clr-text-3)', lineHeight: 1.4 }}>{n.message}</p>
+                          <p style={{ fontSize: 10, color: 'var(--clr-text-3)', marginTop: 4 }}>{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors truncate">{n.title}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
-                          <p className="text-[9px] text-gray-400 mt-2 font-medium">
-                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                          </p>
-                        </div>
-                        {!n.isRead && (
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-purple-500 rounded-full" />
-                        )}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                          className="absolute right-2 top-2 p-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
+                        {!n.isRead && <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 6, height: 6, borderRadius: '50%', background: 'var(--clr-purple)' }} />}
+                      </div>
                     ))
                   )}
                 </div>
                 
-                {notifications.length > 0 && (
-                  <button className="w-full mt-4 py-3 text-[10px] font-bold text-gray-400 hover:text-purple-500 transition-colors uppercase tracking-[0.2em] border-t border-gray-100 dark:border-white/5 pt-4">
-                    View Activity Log
-                  </button>
-                )}
+
               </motion.div>
             )}
           </AnimatePresence>
@@ -187,53 +131,36 @@ export default function Navbar() {
 
         {/* Profile */}
         <div className="relative" ref={profileRef}>
-          <button 
+          <button
             onClick={() => setShowProfile(!showProfile)}
-            className={`flex items-center gap-2 p-1 rounded-full transition-all ${showProfile ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-[#0a0a0a]' : ''}`}
+            style={{ padding: 4, borderRadius: '50%', border: showProfile ? '2px solid var(--clr-purple)' : '2px solid transparent', background: 'none', cursor: 'pointer', transition: 'border 0.2s' }}
           >
-            <div className="w-10 h-10 rounded-2xl overflow-hidden bg-gradient-to-tr from-purple-500/20 to-emerald-500/20 border border-purple-500/20 flex items-center justify-center text-purple-500 font-bold">
-              {user?.profilePic ? (
-                <img src={user.profilePic} alt={user.name} className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-5 h-5" />
-              )}
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--grad-purple)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, boxShadow: '0 0 12px var(--clr-purple-glow)' }}>
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           </button>
 
           <AnimatePresence>
             {showProfile && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 15, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                className="absolute right-0 mt-3 w-64 bg-white dark:bg-[#0a0a0a]/90 rounded-3xl shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden z-50 backdrop-blur-2xl"
+                style={{ position: 'absolute', right: 0, marginTop: 8, width: 220, background: '#0d1324', border: '1px solid var(--clr-border)', borderRadius: 16, zIndex: 200, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', overflow: 'hidden' }}
               >
-                <div className="p-5 bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-white/5">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.name || 'Steria User'}</p>
-                  <p className="text-[10px] text-gray-500 font-medium truncate">{user?.email}</p>
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--clr-border)', background: 'rgba(255,255,255,0.02)' }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-text)' }}>{user?.name || 'Steria User'}</p>
+                  <p style={{ fontSize: 11, color: 'var(--clr-text-3)', marginTop: 2 }}>{user?.email}</p>
                 </div>
-                <div className="p-2.5">
-                  <button 
-                    onClick={() => { setShowProfile(false); navigate('/profile'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
-                  >
-                    <UserCircle className="w-4 h-4 text-purple-500" />
-                    My Profile
-                  </button>
-                  <button 
-                    onClick={() => { setShowProfile(false); navigate('/settings'); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
-                  >
-                    <SettingsIcon className="w-4 h-4 text-emerald-500" />
-                    Preferences
-                  </button>
-                  <div className="h-px bg-gray-100 dark:bg-white/5 my-2 mx-4" />
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
+                <div style={{ padding: '8px' }}>
+                  {[{ label: 'My Profile', icon: <UserCircle size={14} />, path: '/profile', color: 'var(--clr-purple-mid)' }, { label: 'Settings', icon: <SettingsIcon size={14} />, path: '/settings', color: 'var(--clr-emerald)' }].map((item) => (
+                    <button key={item.path} onClick={() => { setShowProfile(false); navigate(item.path); }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-2)', fontSize: 13, fontFamily: 'inherit', fontWeight: 500, textAlign: 'left', transition: 'background 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
+                      <span style={{ color: item.color }}>{item.icon}</span>{item.label}
+                    </button>
+                  ))}
+                  <div style={{ height: 1, background: 'var(--clr-border)', margin: '6px 8px' }} />
+                  <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', borderRadius: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-rose)', fontSize: 13, fontFamily: 'inherit', fontWeight: 600, transition: 'background 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(244,63,94,0.08)'} onMouseLeave={(e) => e.currentTarget.style.background = 'none'}>
+                    <LogOut size={14} /> Logout
                   </button>
                 </div>
               </motion.div>

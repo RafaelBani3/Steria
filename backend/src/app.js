@@ -1,20 +1,28 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
+// Auth & User
 import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+
+// Core Financial
+import accountRoutes from './routes/account.routes.js';
 import incomeRoutes from './routes/income.routes.js';
+import budgetCategoryRoutes from './routes/budget.category.routes.js';
+import budgetItemRoutes from './routes/budget.item.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import savingRoutes from './routes/saving.routes.js';
-import budgetRoutes from './routes/budget.routes.js';
-import aiRoutes from './ai/ai.routes.js';
+
+// Support
 import notificationRoutes from './routes/notification.routes.js';
-import userRoutes from './routes/user.routes.js';
+import aiRoutes from './ai/ai.routes.js';
 
 dotenv.config();
 
 const app = express();
 
-// Middleware
+// ─── CORS ───────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
@@ -25,7 +33,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -34,24 +41,35 @@ app.use(cors({
     return callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-
-// Routes
+// ─── ROUTES ─────────────────────────────────────────────
+// Auth & User
 app.use('/api/auth', authRoutes);
-app.use('/api/income', incomeRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/savings', savingRoutes);
-app.use('/api/budgets', budgetRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 
-// Global Error Handler
+// Core Financial
+app.use('/api/accounts', accountRoutes);
+app.use('/api/income', incomeRoutes);
+app.use('/api/budget-categories', budgetCategoryRoutes);
+app.use('/api/budget-items', budgetItemRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/savings', savingRoutes);
+
+// Support
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/ai', aiRoutes);
+
+// ─── HEALTH CHECK ────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', version: '2.0.0', name: 'Steria Financial OS' });
+});
+
+// ─── GLOBAL ERROR HANDLER ────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });

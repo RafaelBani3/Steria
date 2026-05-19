@@ -1,211 +1,238 @@
 import { useState, useEffect } from 'react';
-import { useFinanceStore } from '../store/useFinanceStore';
-import { Plus, Trash2, Search, ArrowUpRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatIDR } from '../utils/formatCurrency';
-import CurrencyInput from '../components/CurrencyInput';
-import CustomSelect from '../components/CustomSelect';
-import Footer from '../components/Footer';
-import ConfirmModal from '../components/ConfirmModal';
+import { Plus, Trash2, Search, ArrowUpRight, X, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIncomeStore } from '../store/useIncomeStore';
+import { useAccountStore } from '../store/useAccountStore';
+import RupiahInput from '../components/RupiahInput';
+
+
+const formatRp = (n) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
+
+const INCOME_TYPES = ['SALARY', 'FREELANCE', 'BUSINESS', 'INVESTMENT', 'BONUS', 'OTHER'];
+
+const TYPE_LABELS = {
+  SALARY: 'Gaji', FREELANCE: 'Freelance', BUSINESS: 'Bisnis',
+  INVESTMENT: 'Investasi', BONUS: 'Bonus', OTHER: 'Lainnya'
+};
 
 export default function IncomeManagement() {
-  const { incomes, addIncome, deleteIncome, fetchIncomes, selectedMonth, selectedYear } = useFinanceStore();
+  const { incomes, fetchIncomes, createIncome, deleteIncome, isLoading } = useIncomeStore();
+  const { accounts, cashflowAccounts, fetchAccounts } = useAccountStore();
 
-  useEffect(() => { fetchIncomes(); }, []);
-
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(null);
-  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
-  const [source, setSource] = useState('');
-  const [amount, setAmount] = useState(0);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [category, setCategory] = useState('Salary');
-  const [notes, setNotes] = useState('');
+  const [form, setForm] = useState({
+    accountId: '',
+    amount: '',
+    incomeType: 'SALARY',
+    description: '',
+    transactionDate: now.toISOString().split('T')[0],
+  });
 
-  const categories = ['Salary', 'Freelance', 'Business', 'Bonus', 'Investment', 'Other'];
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  useEffect(() => {
+    fetchIncomes(selectedMonth, selectedYear);
+  }, [fetchIncomes, selectedMonth, selectedYear]);
+
+  // Pre-select first cashflow account
+  useEffect(() => {
+    if (cashflowAccounts.length > 0 && !form.accountId) {
+      setForm((f) => ({ ...f, accountId: cashflowAccounts[0].id }));
+    }
+  }, [cashflowAccounts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!source || !amount) return;
-    setIsActionLoading(true);
+    if (!form.accountId || !form.amount) { toast.error('Please fill all required fields'); return; }
     try {
-      await addIncome({ source, amount: Number(amount), date, category, notes });
-      toast.success('Pemasukan berhasil ditambahkan ✨');
-      setSource(''); setAmount(0); setNotes(''); setShowForm(false);
+      await createIncome(form);
+      await fetchAccounts(); // refresh balances
+      toast.success('Income added successfully! 💸');
+      setForm({ accountId: cashflowAccounts[0]?.id || '', amount: '', incomeType: 'SALARY', description: '', transactionDate: now.toISOString().split('T')[0] });
+      setShowForm(false);
     } catch (err) {
-      toast.error('Gagal menambahkan pemasukan.');
-    } finally {
-      setIsActionLoading(false);
+      toast.error('Failed to add income');
     }
   };
 
-  const handleDelete = async () => {
-    if (!isDeleting) return;
-    setIsActionLoading(true);
+  const handleDelete = async (inc) => {
+    if (!confirm(`Delete "${inc.description || inc.incomeType}" income of ${formatRp(inc.amount)}?`)) return;
     try {
-      await deleteIncome(isDeleting);
-      toast.success('Pemasukan berhasil dihapus.');
-      setIsDeleting(null);
-    } catch (err) {
-      toast.error('Gagal menghapus pemasukan.');
-    } finally {
-      setIsActionLoading(false);
+      await deleteIncome(inc.id);
+      await fetchAccounts(); // refresh balances
+      toast.success('Income removed');
+    } catch {
+      toast.error('Failed to delete income');
     }
   };
 
-  const safeIncomes = Array.isArray(incomes) ? incomes : [];
-  const filteredIncomes = safeIncomes.filter(inc => {
-    const d = new Date(inc.date);
-    const inPeriod = d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
-    const matchSearch = inc.source.toLowerCase().includes(search.toLowerCase()) ||
-                        inc.category.toLowerCase().includes(search.toLowerCase());
-    return inPeriod && matchSearch;
+  const filtered = incomes.filter((i) => {
+    const desc = (i.description || i.incomeType || '').toLowerCase();
+    return desc.includes(search.toLowerCase());
   });
 
-  const totalIncome = filteredIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+  const totalIncome = filtered.reduce((s, i) => s + i.amount, 0);
 
   return (
-    <div className="space-y-5 pb-24 md:pb-8">
+    <div style={{ paddingBottom: 40 }}>
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}
+      >
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Income</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Track your revenue streams.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Wallet size={20} style={{ color: 'var(--clr-emerald)' }} />
+            <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-text)' }}>Income</h1>
+          </div>
+          <p style={{ color: 'var(--clr-text-3)', fontSize: 13 }}>Track your revenue streams & account inflows</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95 flex items-center gap-2 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Income</span>
+        <button onClick={() => setShowForm(true)} className="btn-primary">
+          <Plus size={16} /> Add Income
         </button>
-      </div>
+      </motion.div>
 
       {/* Summary Card */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/20"
+        className="glass"
+        style={{
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+          border: '1px solid rgba(16,185,129,0.25)',
+          borderRadius: 20,
+          padding: '22px 24px',
+          marginBottom: 24,
+        }}
       >
-        <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">Total Revenue This Period</p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-4xl font-black tracking-tighter">{formatIDR(totalIncome)}</p>
-          <span className="text-emerald-200 text-xs font-bold opacity-60">IDR</span>
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          <div className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-bold">
-            {filteredIncomes.length} source(s)
-          </div>
+        <p style={{ fontSize: 11, color: 'rgba(16,185,129,0.8)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, marginBottom: 6 }}>
+          Total Income — {new Date(selectedYear, selectedMonth - 1).toLocaleString('id-ID', { month: 'long', year: 'numeric' })}
+        </p>
+        <p className="font-display" style={{ fontSize: 32, fontWeight: 800, color: 'var(--clr-text)' }}>
+          {formatRp(totalIncome)}
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          <span className="badge badge-emerald">{filtered.length} transactions</span>
+          {cashflowAccounts.length > 0 && (
+            <span className="badge badge-cyan">via {cashflowAccounts.length} accounts</span>
+          )}
         </div>
       </motion.div>
 
-      {/* Add Form */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-white/5 overflow-visible z-50 relative"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold">Add New Income</h3>
-              <button onClick={() => setShowForm(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Source Name</label>
-                <input required type="text" value={source} onChange={e => setSource(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 focus:bg-white dark:focus:bg-white/10 rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none transition-all"
-                  placeholder="e.g. Monthly Salary, Freelance Gig" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Amount</label>
-                <CurrencyInput required value={amount} onChange={setAmount}
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 focus:bg-white dark:focus:bg-white/10 rounded-2xl px-4 py-4 text-lg font-black outline-none transition-all" placeholder="0" />
-              </div>
-              <CustomSelect 
-                label="Category"
-                value={category}
-                onChange={setCategory}
-                options={categories.map(c => ({ label: c, value: c }))}
-              />
-              <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Date Received</label>
-                <input required type="date" value={date} onChange={e => setDate(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 focus:bg-white dark:focus:bg-white/10 rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none transition-all" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Notes (Optional)</label>
-                <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-transparent focus:border-purple-500/30 focus:bg-white dark:focus:bg-white/10 rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none transition-all" placeholder="Add some notes..." />
-              </div>
-              <div className="sm:col-span-2 flex gap-3 mt-2">
-                <button type="button" onClick={() => setShowForm(false)}
-                  className="flex-1 py-4 text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/5 rounded-2xl font-bold transition-all active:scale-95">Cancel</button>
-                <button type="submit" disabled={isActionLoading}
-                  className="flex-1 py-4 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95">
-                  {isActionLoading ? 'Saving...' : 'Add Income'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Search */}
-      <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
-        <input type="text" placeholder="Search revenue..." value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl border border-gray-100 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm outline-none focus:border-purple-500/30 transition-all shadow-sm" />
+      {/* Filters Row */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-3)' }} />
+          <input
+            className="input-dark"
+            type="text"
+            placeholder="Search income..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ paddingLeft: 36 }}
+          />
+        </div>
+        <select
+          className="input-dark"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          style={{ maxWidth: 130 }}
+        >
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {new Date(2024, i).toLocaleString('id-ID', { month: 'long' })}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input-dark"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          style={{ maxWidth: 100 }}
+        >
+          {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
       </div>
 
-      {/* List */}
-      <div className="space-y-4">
-        {filteredIncomes.length === 0 ? (
-          <div className="bg-white dark:bg-[#0a0a0a]/40 rounded-[2.5rem] p-20 text-center border border-gray-100 dark:border-white/5 backdrop-blur-md">
-            <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <ArrowUpRight className="w-8 h-8 text-gray-200 dark:text-gray-700" />
-            </div>
-            <p className="text-gray-400 font-bold text-sm">No revenue streams found</p>
-            <p className="text-[10px] text-gray-500 mt-1">Add your first income to start tracking.</p>
+      {/* Income List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {isLoading ? (
+          [1, 2, 3].map((i) => <div key={i} className="shimmer" style={{ height: 70, borderRadius: 16 }} />)
+        ) : filtered.length === 0 ? (
+          <div className="glass" style={{ padding: 48, textAlign: 'center', borderRadius: 20 }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>💸</div>
+            <p style={{ color: 'var(--clr-text)', fontWeight: 600, marginBottom: 4 }}>No income found</p>
+            <p style={{ color: 'var(--clr-text-3)', fontSize: 13 }}>Add your first income to start tracking</p>
           </div>
         ) : (
-          filteredIncomes.map((inc) => (
-            <motion.div key={inc.id} layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="group bg-white dark:bg-[#0a0a0a]/60 backdrop-blur-xl rounded-[2rem] p-4 border border-gray-100 dark:border-white/5 shadow-sm flex items-center gap-4 hover:border-emerald-500/20 transition-all"
+          filtered.map((inc, i) => (
+            <motion.div
+              key={inc.id}
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="glass"
+              style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, borderRadius: 16 }}
             >
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform">
-                <ArrowUpRight className="w-6 h-6" />
+              <div
+                style={{
+                  width: 44, height: 44,
+                  borderRadius: 14,
+                  background: 'rgba(16,185,129,0.12)',
+                  border: '1px solid rgba(16,185,129,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, flexShrink: 0,
+                }}
+              >
+                {inc.account?.icon || '💰'}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{inc.source}</p>
-                  <span className="text-[9px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{inc.category}</span>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {inc.description || TYPE_LABELS[inc.incomeType] || 'Income'}
+                  </p>
+                  <span className="badge badge-emerald" style={{ fontSize: 10 }}>
+                    {TYPE_LABELS[inc.incomeType] || inc.incomeType}
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className="text-[10px] text-gray-500 font-medium">{new Date(inc.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  {inc.notes && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
+                    {new Date(inc.transactionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  {inc.account && (
                     <>
-                      <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
-                      <p className="text-[10px] text-gray-400 truncate">{inc.notes}</p>
+                      <span style={{ color: 'var(--clr-border)', fontSize: 10 }}>·</span>
+                      <span style={{ fontSize: 11, color: 'var(--clr-cyan)' }}>
+                        → {inc.account.providerName}
+                      </span>
                     </>
                   )}
                 </div>
               </div>
-              <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                <p className="font-black text-emerald-500 text-base tracking-tighter">{formatIDR(inc.amount)}</p>
-                <button onClick={() => setIsDeleting(inc.id)}
-                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100">
-                  <Trash2 className="w-4 h-4" />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-emerald)' }}>
+                  +{formatRp(inc.amount)}
+                </p>
+                <button
+                  onClick={() => handleDelete(inc)}
+                  style={{ padding: '6px', borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
             </motion.div>
@@ -213,16 +240,128 @@ export default function IncomeManagement() {
         )}
       </div>
 
-      <ConfirmModal 
-        isOpen={!!isDeleting}
-        onClose={() => setIsDeleting(null)}
-        onConfirm={handleDelete}
-        title="Delete Income Source?"
-        message="This will remove this revenue stream from your current period calculations."
-        isLoading={isActionLoading}
-      />
+      {/* Add Income Modal */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setShowForm(false)}
+          >
+            <motion.div
+              className="modal-card"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <div className="modal-handle" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+                <div>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-text)' }}>Add Income</h2>
+                  <p style={{ fontSize: 12, color: 'var(--clr-text-3)', marginTop: 2 }}>Record a new inflow to your account</p>
+                </div>
+                <button onClick={() => setShowForm(false)} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}>
+                  <X size={18} />
+                </button>
+              </div>
 
-      <Footer />
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Account */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    Destination Account *
+                  </label>
+                  {cashflowAccounts.length === 0 ? (
+                    <div style={{ padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: 12, border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <p style={{ fontSize: 13, color: 'var(--clr-amber)' }}>⚠️ No cashflow accounts found. Please add an account first.</p>
+                    </div>
+                  ) : (
+                    <select
+                      className="input-dark"
+                      value={form.accountId}
+                      onChange={(e) => setForm((f) => ({ ...f, accountId: e.target.value }))}
+                      required
+                    >
+                      <option value="">Select account...</option>
+                      {cashflowAccounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.icon || '💳'} {acc.accountName} — {acc.providerName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Amount — auto-formatted Rupiah */}
+                <div>
+                  <label className="field-label" style={{ display: 'block', marginBottom: 6 }}>Amount *</label>
+                  <RupiahInput
+                    value={form.amount}
+                    onChange={(v) => setForm((f) => ({ ...f, amount: v }))}
+                    placeholder="0"
+                    required
+                  />
+                </div>
+
+                {/* Income Type */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    Income Type
+                  </label>
+                  <select
+                    className="input-dark"
+                    value={form.incomeType}
+                    onChange={(e) => setForm((f) => ({ ...f, incomeType: e.target.value }))}
+                  >
+                    {INCOME_TYPES.map((t) => (
+                      <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    Description
+                  </label>
+                  <input
+                    className="input-dark"
+                    type="text"
+                    placeholder="e.g. Monthly salary from PT XYZ"
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  />
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    Date
+                  </label>
+                  <input
+                    className="input-dark"
+                    type="date"
+                    value={form.transactionDate}
+                    onChange={(e) => setForm((f) => ({ ...f, transactionDate: e.target.value }))}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
+                    <ArrowUpRight size={16} /> Add Income
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

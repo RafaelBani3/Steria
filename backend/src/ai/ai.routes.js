@@ -1,5 +1,5 @@
 import express from 'express';
-import { processFinanceController } from './ai.controller.js';
+import { processFinanceController, processChatController } from './ai.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -9,5 +9,8 @@ router.use(authenticate);
 
 // POST /api/ai
 router.post('/', processFinanceController);
+
+// POST /api/ai/chat
+router.post('/chat', processChatController);
 
 export default router;

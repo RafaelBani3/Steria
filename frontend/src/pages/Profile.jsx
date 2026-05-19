@@ -1,36 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Shield, MapPin, Camera, Edit3, Award, Zap, Phone, Info, Target, TrendingUp, Save, X, Globe, Link, Check, LogOut } from 'lucide-react';
+import {
+  User, Mail, Shield, MapPin, Camera, Edit3,
+  Award, Zap, Phone, Info, Target, TrendingUp,
+  Save, X, Globe, Link, Check, LogOut, Calendar, DollarSign
+} from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { toast } from 'sonner';
 import { formatIDR } from '../utils/formatCurrency';
 import Footer from '../components/Footer';
 
-const ProfileCard = ({ title, children, icon: Icon, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] border border-white/5 bg-white/5 p-6 md:p-8 backdrop-blur-xl group hover:border-white/10 transition-all"
-  >
-    <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-purple-500/5 blur-[50px] group-hover:bg-purple-500/10 transition-all" />
-    <div className="relative z-10">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
-          <Icon size={20} />
-        </div>
-        <h3 className="text-sm font-black text-white uppercase tracking-widest">{title}</h3>
-      </div>
-      {children}
-    </div>
-  </motion.div>
-);
-
 export default function Profile() {
   const { user, updateUser, isLoading, logout } = useAuthStore();
-  const { incomes, expenses, savings, fetchIncomes, fetchExpenses, fetchSavings, selectedMonth, selectedYear } = useFinanceStore();
-  
+  const {
+    incomes, expenses, savings,
+    fetchIncomes, fetchExpenses, fetchSavings,
+    selectedMonth, selectedYear
+  } = useFinanceStore();
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -67,7 +55,7 @@ export default function Profile() {
   // Dynamic Stats Calculations
   const stats = useMemo(() => {
     const totalSavingsValue = savings.reduce((sum, item) => sum + (item.currentAmount || 0), 0);
-    
+
     const filteredIncomes = incomes.filter(item => {
       const d = new Date(item.date);
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
@@ -83,14 +71,16 @@ export default function Profile() {
 
     const totalAssets = totalSavingsValue + (monthlySurplus > 0 ? monthlySurplus : 0);
     const completedGoals = savings.filter(s => s.currentAmount >= s.targetAmount).length;
-    
-    // Health Score calculation (0-1000)
+
+    // Health Score calculation (300-1000)
     const savingsRate = totalIncome > 0 ? (monthlySurplus / totalIncome) * 100 : 0;
-    const healthScore = Math.min(Math.max(Math.floor(savingsRate * 10), 300), 1000);
+    const healthScore = Math.min(Math.max(Math.floor(savingsRate * 10) + 500, 300), 1000);
 
-    const joinDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'May 2026';
+    const joinDate = user?.createdAt
+      ? new Date(user.createdAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+      : 'Mei 2026';
 
-    return { totalAssets, completedGoals, healthScore, joinDate, savingsRate };
+    return { totalAssets, completedGoals, healthScore, joinDate };
   }, [incomes, expenses, savings, user, selectedMonth, selectedYear]);
 
   const handleSave = async () => {
@@ -103,233 +93,531 @@ export default function Profile() {
     }
   };
 
-  const InfoRow = ({ icon: Icon, label, value, field, type = "text" }) => (
-    <div className="flex items-center gap-4 p-4 rounded-3xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-all">
-      <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
-        <Icon size={18} />
-      </div>
-      <div className="flex-1">
-        <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-0.5">{label}</p>
-        {isEditing && field !== 'email' ? (
-          <input
-            type={type}
-            value={formData[field]}
-            onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-            className="w-full bg-transparent text-sm font-bold text-white outline-none border-b border-purple-500/30 focus:border-purple-500 transition-colors py-0.5"
-            placeholder={`Enter ${label.toLowerCase()}...`}
-          />
-        ) : (
-          <p className="text-sm font-bold text-white">{value || 'Not set'}</p>
-        )}
-      </div>
-    </div>
-  );
-
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-8 pb-24 md:pb-8"
+      className="page-wrapper"
+      style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
     >
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-[3.5rem] border border-white/5 bg-[#0a0a0a] shadow-2xl">
-        {/* Cover Image / Gradient */}
-        <div className="h-40 md:h-64 bg-gradient-to-br from-[#6C4CF1] via-[#8B5CF6] to-[#10B981] relative overflow-hidden">
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              rotate: [0, 90, 0],
+      {/* Profile Banner Card */}
+      <div
+        className="glass"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 24,
+          background: 'var(--bg-2)',
+        }}
+      >
+        {/* Cover Art (Premium Mesh Gradient) */}
+        <div
+          style={{
+            height: 140,
+            background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 50%, var(--emerald) 100%)',
+            position: 'relative',
+            opacity: 0.85,
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 60%)',
             }}
-            transition={{ duration: 20, repeat: Infinity }}
-            className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-[100px]" 
           />
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
-          
-          <div className="absolute top-6 right-6 md:top-8 md:right-8 flex gap-3 z-20">
-            <AnimatePresence mode="wait">
-              {isEditing ? (
-                <motion.div
-                  key="editing"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex gap-2"
-                >
-                  <button 
-                    onClick={() => setIsEditing(false)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-md border border-white/10 transition-all active:scale-95"
-                  >
-                    <X size={16} /> Cancel
-                  </button>
-                  <button 
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {isLoading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Save</>}
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.button
-                  key="viewing"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-md border border-white/10 transition-all active:scale-95"
-                >
-                  <Edit3 size={16} /> Edit Profile
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
-        
-        {/* Profile Info Overlay */}
-        <div className="px-8 md:px-12 pb-12 relative">
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-16 md:-mt-20 z-20 relative">
-            <div className="relative">
-              <div className="w-28 h-28 md:w-40 md:h-40 rounded-[2.5rem] md:rounded-[3rem] bg-[#0a0a0a] p-1 md:p-2 shadow-2xl border-4 border-[#0a0a0a]">
-                <div className="w-full h-full rounded-[2.2rem] md:rounded-[2.5rem] bg-white/5 flex items-center justify-center text-white/20 relative overflow-hidden group">
+
+        {/* User Profile Header Content */}
+        <div style={{ padding: '0 24px 24px', position: 'relative' }}>
+          {/* Avatar and Identity */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              marginTop: -60,
+              gap: 16,
+              textAlign: 'center',
+            }}
+            className="md-row-align"
+          >
+            {/* Avatar Wrap */}
+            <div style={{ position: 'relative', zIndex: 10 }}>
+              <div
+                style={{
+                  width: 110,
+                  height: 110,
+                  borderRadius: '50%',
+                  background: 'var(--bg-2)',
+                  padding: 4,
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                  className="group"
+                >
                   {formData.profilePic ? (
-                    <img src={formData.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={formData.profilePic} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <User className="w-12 h-12 md:w-16 md:h-16" />
+                    <User size={40} style={{ color: 'var(--t3)' }} />
                   )}
-                  <button className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-white text-[10px] font-black uppercase tracking-widest">
-                    <Camera size={16} />
-                    <span>Upload</span>
+                  <button
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.7)',
+                      opacity: 0,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'opacity 0.2s',
+                    }}
+                    className="group-hover-opacity"
+                  >
+                    <Camera size={18} color="#fff" />
                   </button>
                 </div>
               </div>
-              <div className="absolute bottom-1 right-1 md:bottom-2 md:right-2 h-7 w-7 md:h-9 md:w-9 rounded-xl md:rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg border-2 md:border-4 border-[#0a0a0a]">
-                <Check className="w-4 h-4 md:w-5 md:h-5" />
+              {/* Active Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 4,
+                  right: 4,
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'var(--emerald)',
+                  border: '3px solid var(--bg-2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+              >
+                <Check size={12} color="#fff" strokeWidth={3} />
               </div>
             </div>
-            
-            <div className="text-center md:text-left mb-2">
-              <div className="flex flex-col md:flex-row items-center gap-3 mb-1">
-                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">{user?.name}</h1>
-                <div className="bg-purple-600/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-purple-400 uppercase tracking-[0.2em] border border-purple-500/20">
-                  Pro Member
-                </div>
+
+            {/* Name & Identity */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }} className="md-justify-start">
+                <h1 className="font-display" style={{ fontSize: 24, fontWeight: 700, color: 'var(--t1)' }}>
+                  {user?.name || 'Rafael'}
+                </h1>
+                <span className="badge badge-purple">PRO MEMBER</span>
               </div>
-              <p className="text-gray-500 font-bold tracking-wide">@{user?.username || 'user'}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
-            <div className="lg:col-span-2 space-y-8">
-              <ProfileCard title="Personal Information" icon={User}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow icon={User} label="Full Name" value={user?.name} field="name" />
-                  <InfoRow icon={TrendingUp} label="Username" value={user?.username} field="username" />
-                  <InfoRow icon={Mail} label="Email Address" value={user?.email} field="email" />
-                  <InfoRow icon={Phone} label="Phone Number" value={user?.phone} field="phone" type="tel" />
-                </div>
-                <div className="mt-4">
-                  <div className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-all">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-                        <Info size={14} />
-                      </div>
-                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Biography</p>
-                    </div>
-                    {isEditing ? (
-                      <textarea
-                        value={formData.bio}
-                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                        rows={3}
-                        className="w-full bg-transparent text-sm font-bold text-white outline-none border-b border-purple-500/30 focus:border-purple-500 transition-colors py-1 resize-none"
-                        placeholder="Tell us about yourself..."
-                      />
-                    ) : (
-                      <p className="text-sm font-medium text-white/80 leading-relaxed italic">
-                        "{user?.bio || 'Financial enthusiast and Steria user.'}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </ProfileCard>
-
-              <ProfileCard title="Financial Preferences" icon={Target} delay={0.1}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow icon={Zap} label="Monthly Income Target" value={user?.incomeTarget ? formatIDR(user.incomeTarget) : 'Not set'} field="incomeTarget" type="number" />
-                  <InfoRow icon={Award} label="Main Financial Goal" value={user?.financialGoals || 'Not set'} field="financialGoals" />
-                </div>
-                <div className="mt-6 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-purple-500/10 to-emerald-500/10 border border-white/5 relative overflow-hidden group">
-                  <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl group-hover:bg-emerald-500/10 transition-all duration-1000" />
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Steria Health Score</h4>
-                      <p className="text-[10px] text-emerald-500 font-bold mt-1 uppercase tracking-widest">
-                        {stats.healthScore > 800 ? 'Excellent Status' : 'Good Progress'}
-                      </p>
-                    </div>
-                    <span className="text-4xl font-black text-emerald-500 tracking-tighter">{stats.healthScore}</span>
-                  </div>
-                  <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden p-0.5">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(stats.healthScore / 1000) * 100}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"
-                    />
-                  </div>
-                  <p className="text-[10px] text-white/40 mt-5 font-medium text-center italic leading-relaxed">
-                    {stats.healthScore > 800 
-                      ? "Your financial management is in the top 5% of users. Premium performance!" 
-                      : "Great job! Keep increasing your saving rate to boost your health score."}
-                  </p>
-                </div>
-              </ProfileCard>
+              <p style={{ fontSize: 13, color: 'var(--t3)', fontWeight: 500 }}>
+                @{user?.username || 'user'}
+              </p>
             </div>
 
-            <div className="space-y-8">
-              <ProfileCard title="Quick Stats" icon={Award} delay={0.2}>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Member Since', value: stats.joinDate, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-                    { label: 'Total Assets', value: formatIDR(stats.totalAssets), color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                    { label: 'Achievements', value: `${stats.completedGoals} Goal(s) Reached`, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-                  ].map(stat => (
-                    <div key={stat.label} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                      <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">{stat.label}</p>
-                      <p className={`text-sm font-black ${stat.color}`}>{stat.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </ProfileCard>
-
-              <ProfileCard title="Social Connectivity" icon={Globe} delay={0.3}>
-                <div className="flex justify-center gap-4">
-                  {[Globe, Link, Mail].map((Icon, i) => (
-                    <button key={i} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all hover:scale-110 active:scale-95 border border-white/5">
-                      <Icon size={20} />
+            {/* Editing Controls */}
+            <div style={{ marginTop: 12 }} className="md-mt-0">
+              <AnimatePresence mode="wait">
+                {isEditing ? (
+                  <motion.div
+                    key="editing"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    style={{ display: 'flex', gap: 8 }}
+                  >
+                    <button onClick={() => setIsEditing(false)} className="btn-ghost" style={{ padding: '8px 16px' }}>
+                      <X size={15} /> Batal
                     </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-white/20 mt-6 text-center font-bold uppercase tracking-widest leading-relaxed">
-                  Connect your accounts to showcase your achievements.
-                </p>
-              </ProfileCard>
-
-              <div className="p-1 rounded-[2.5rem] bg-gradient-to-br from-red-500/50 to-orange-500/50 shadow-2xl overflow-hidden group">
-                <button 
-                  onClick={() => logout()}
-                  className="w-full h-full bg-[#0a0a0a] rounded-[2.4rem] p-6 flex flex-col items-center justify-center gap-2 group-hover:bg-red-500/10 transition-all active:scale-95"
-                >
-                  <LogOut className="w-8 h-8 text-red-500 mb-2 group-hover:scale-110 transition-transform" />
-                  <p className="text-sm font-bold text-white">Log Out</p>
-                  <p className="text-[10px] text-white/30 text-center leading-relaxed">
-                    Securely sign out of your Steria account.
-                  </p>
-                </button>
-              </div>
+                    <button onClick={handleSave} disabled={isLoading} className="btn-primary" style={{ padding: '8px 18px' }}>
+                      {isLoading ? 'Menyimpan...' : 'Simpan'}
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    key="viewing"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    onClick={() => setIsEditing(true)}
+                    className="btn-ghost"
+                    style={{ padding: '8px 18px' }}
+                  >
+                    <Edit3 size={14} /> Edit Profil
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Profile Details Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }} className="lg-grid-layout">
+        {/* Left Column — Inputs & Preferences */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="lg-col-span-2">
+          {/* Personal Info Card */}
+          <div className="glass" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <p className="section-label">Personal Information</p>
+              <p style={{ fontSize: 13, color: 'var(--t3)' }}>Kelola data diri dan kontak akun Anda</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }} className="md-grid-cols-2">
+              <div className="field-group">
+                <span className="field-label">Full Name</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input-dark"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                ) : (
+                  <div className="input-dark" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--t2)' }}>
+                    {user?.name || 'Not set'}
+                  </div>
+                )}
+              </div>
+
+              <div className="field-group">
+                <span className="field-label">Username</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input-dark"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  />
+                ) : (
+                  <div className="input-dark" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--t2)' }}>
+                    @{user?.username || 'Not set'}
+                  </div>
+                )}
+              </div>
+
+              <div className="field-group">
+                <span className="field-label">Email Address</span>
+                <div className="input-dark" style={{ background: 'rgba(255,255,255,0.01)', color: 'var(--t3)', borderStyle: 'dashed' }}>
+                  {user?.email || 'Not set'}
+                </div>
+              </div>
+
+              <div className="field-group">
+                <span className="field-label">Phone Number</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input-dark"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                ) : (
+                  <div className="input-dark" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--t2)' }}>
+                    {user?.phone || 'Not set'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="field-group">
+              <span className="field-label">Biography</span>
+              {isEditing ? (
+                <textarea
+                  className="input-dark"
+                  rows={2}
+                  style={{ resize: 'none' }}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                />
+              ) : (
+                <div
+                  className="input-dark"
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    color: 'var(--t2)',
+                    minHeight: 60,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  "{user?.bio || 'Financial enthusiast and Steria user.'}"
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Financial Goals & Health Score */}
+          <div className="glass" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <p className="section-label">Financial Preferences</p>
+              <p style={{ fontSize: 13, color: 'var(--t3)' }}>Konfigurasi target dan skor kesehatan finansial</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }} className="md-grid-cols-2">
+              <div className="field-group">
+                <span className="field-label">Monthly Income Target</span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    className="input-dark"
+                    value={formData.incomeTarget}
+                    onChange={(e) => setFormData({ ...formData, incomeTarget: e.target.value })}
+                  />
+                ) : (
+                  <div className="input-dark" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--t2)' }}>
+                    {user?.incomeTarget ? formatIDR(user.incomeTarget) : 'Not set'}
+                  </div>
+                )}
+              </div>
+
+              <div className="field-group">
+                <span className="field-label">Main Financial Goal</span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="input-dark"
+                    value={formData.financialGoals}
+                    onChange={(e) => setFormData({ ...formData, financialGoals: e.target.value })}
+                  />
+                ) : (
+                  <div className="input-dark" style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--t2)' }}>
+                    {user?.financialGoals || 'Not set'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(16,185,129,0.04) 100%)',
+                border: '1px solid rgba(124,58,237,0.12)',
+                borderRadius: 16,
+                padding: 20,
+                marginTop: 8,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div>
+                  <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)' }}>Steria Health Score</h4>
+                  <p style={{ fontSize: 10, color: 'var(--emerald)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>
+                    {stats.healthScore > 800 ? 'Sangat Sehat' : 'Progres Baik'}
+                  </p>
+                </div>
+                <span className="font-display" style={{ fontSize: 32, fontWeight: 850, color: 'var(--emerald)' }}>
+                  {stats.healthScore}
+                </span>
+              </div>
+
+              <div className="progress-thick">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(stats.healthScore / 1000) * 100}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className="progress-fill animate-pulse-glow"
+                  style={{
+                    background: 'linear-gradient(90deg, var(--violet) 0%, var(--emerald) 100%)',
+                  }}
+                />
+              </div>
+
+              <p style={{ fontSize: 11, color: 'var(--t3)', fontStyle: 'italic', marginTop: 14, textAlign: 'center' }}>
+                {stats.healthScore > 800
+                  ? "Manajemen finansial Anda masuk dalam kategori 5% teratas. Pertahankan!"
+                  : "Kerja bagus! Terus tingkatkan tabungan bulanan Anda untuk menaikkan skor."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column — Stats & Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Quick Stats Card */}
+          <div className="glass" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p className="section-label">Quick Stats</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 12,
+                  border: '1px solid var(--glass-border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Calendar size={14} style={{ color: 'var(--violet)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Bergabung Sejak</span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--t2)' }}>{stats.joinDate}</span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 12,
+                  border: '1px solid var(--glass-border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <DollarSign size={14} style={{ color: 'var(--emerald)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Total Aset</span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--emerald)' }}>{formatIDR(stats.totalAssets)}</span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 12,
+                  border: '1px solid var(--glass-border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Award size={14} style={{ color: 'var(--cyan)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--t3)', fontWeight: 500 }}>Pencapaian</span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cyan)' }}>{stats.completedGoals} Target</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Social Connectivity Card */}
+          <div className="glass" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ alignSelf: 'flex-start' }}>
+              <p className="section-label">Social Connectivity</p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, margin: '8px 0' }}>
+              {[Globe, Link, Mail].map((Icon, i) => (
+                <button
+                  key={i}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--glass-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: 'var(--t3)',
+                    transition: 'all 0.2s',
+                  }}
+                  className="social-btn"
+                >
+                  <Icon size={16} />
+                </button>
+              ))}
+            </div>
+
+            <p style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.4 }}>
+              Hubungkan akun Anda untuk memamerkan pencapaian finansial Anda secara publik.
+            </p>
+          </div>
+
+          {/* Log Out Block */}
+          <button
+            onClick={() => logout()}
+            style={{
+              width: '100%',
+              background: 'rgba(244,63,94,0.05)',
+              border: '1px solid rgba(244,63,94,0.2)',
+              borderRadius: 16,
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              textAlign: 'left',
+            }}
+            className="logout-btn"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'rgba(244,63,94,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--rose)',
+                }}
+              >
+                <LogOut size={16} />
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)' }}>Keluar Akun</p>
+                <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>Securely sign out of Steria</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Extra CSS Styles scoped to Profile page helper classes */}
+      <style>{`
+        .group:hover .group-hover-opacity {
+          opacity: 1 !important;
+        }
+        .social-btn:hover {
+          background: rgba(255,255,255,0.07) !important;
+          color: var(--t1) !important;
+          transform: translateY(-1px);
+        }
+        .logout-btn:hover {
+          background: rgba(244,63,94,0.09) !important;
+          border-color: rgba(244,63,94,0.3) !important;
+        }
+        @media (min-width: 768px) {
+          .md-row-align {
+            flex-direction: row !important;
+            text-align: left !important;
+          }
+          .md-justify-start {
+            justify-content: flex-start !important;
+          }
+          .md-mt-0 {
+            margin-top: 0 !important;
+          }
+          .md-grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .lg-grid-layout {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+          .lg-col-span-2 {
+            grid-column: span 2 / span 2 !important;
+          }
+        }
+      `}</style>
 
       <Footer />
     </motion.div>
