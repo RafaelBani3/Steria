@@ -219,14 +219,29 @@ export default function BudgetManagement() {
   const [form, setForm] = useState({ itemName: '', allocatedAmount: '', sourceAccountId: '', accountId: '', color: '#7C3AED' });
 
   // Allocation rule state
-  const [selectedPreset, setSelectedPreset] = useState('50-30-20');
-  const [customRule, setCustomRule] = useState({ needs: 50, wants: 30, savings: 20 });
+  const [selectedPreset, setSelectedPreset] = useState(() => {
+    return localStorage.getItem('budget_selected_preset') || '50-30-20';
+  });
+  const [customRule, setCustomRule] = useState(() => {
+    const saved = localStorage.getItem('budget_custom_rule');
+    return saved ? JSON.parse(saved) : { needs: 50, wants: 30, savings: 20 };
+  });
 
-  const activePreset = ALLOCATION_PRESETS.find(p => p.id === selectedPreset);
+  const activePreset = ALLOCATION_PRESETS.find(p => p.id === selectedPreset) || ALLOCATION_PRESETS[0];
   const allocationRule = selectedPreset === 'custom'
     ? customRule
     : { needs: activePreset.needs, wants: activePreset.wants, savings: activePreset.savings };
   const customTotal = customRule.needs + customRule.wants + customRule.savings;
+
+  // Persist preset selection
+  useEffect(() => {
+    localStorage.setItem('budget_selected_preset', selectedPreset);
+  }, [selectedPreset]);
+
+  // Persist custom rules
+  useEffect(() => {
+    localStorage.setItem('budget_custom_rule', JSON.stringify(customRule));
+  }, [customRule]);
 
   useEffect(() => {
     fetchCategories();
@@ -582,18 +597,23 @@ export default function BudgetManagement() {
           <p style={{ color: 'var(--clr-text)', fontWeight: 600, marginBottom: 4 }}>Loading budget categories...</p>
         </div>
       ) : (
-        categories.map((cat) => (
-          <CategorySection
-            key={cat.id}
-            category={cat}
-            items={budgetItems.filter((i) => i.categoryId === cat.id)}
-            totalIncome={totalIncome}
-            onAddItem={handleOpenAddItem}
-            onEditItem={handleOpenEditItem}
-            onDeleteItem={handleDeleteItem}
-            allocationRule={allocationRule}
-          />
-        ))
+        [...categories]
+          .sort((a, b) => {
+            const order = { Needs: 1, Wants: 2, Savings: 3 };
+            return (order[a.categoryName] || 99) - (order[b.categoryName] || 99);
+          })
+          .map((cat) => (
+            <CategorySection
+              key={cat.id}
+              category={cat}
+              items={budgetItems.filter((i) => i.categoryId === cat.id)}
+              totalIncome={totalIncome}
+              onAddItem={handleOpenAddItem}
+              onEditItem={handleOpenEditItem}
+              onDeleteItem={handleDeleteItem}
+              allocationRule={allocationRule}
+            />
+          ))
       )}
 
       {/* Add Item Modal */}
