@@ -226,6 +226,7 @@ export default function BudgetManagement() {
     const saved = localStorage.getItem('budget_custom_rule');
     return saved ? JSON.parse(saved) : { needs: 50, wants: 30, savings: 20 };
   });
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const activePreset = ALLOCATION_PRESETS.find(p => p.id === selectedPreset) || ALLOCATION_PRESETS[0];
   const allocationRule = selectedPreset === 'custom'
@@ -504,31 +505,116 @@ export default function BudgetManagement() {
         className="glass"
         style={{ padding: '16px 18px', borderRadius: 18, marginBottom: 20 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: selectedPreset === 'custom' ? 14 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: selectedPreset === 'custom' ? 14 : 0, position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sliders size={15} style={{ color: 'var(--clr-violet)' }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-text)' }}>Aturan Alokasi Dana</span>
           </div>
-          <select
-            value={selectedPreset}
-            onChange={(e) => setSelectedPreset(e.target.value)}
-            className="input-dark"
-            style={{
-              width: 'auto',
-              padding: '6px 28px 6px 12px',
-              borderRadius: 10,
-              fontWeight: 700,
-              fontSize: 12,
-              cursor: 'pointer',
-              color: 'var(--clr-text)',
-            }}
-          >
-            {ALLOCATION_PRESETS.map(preset => (
-              <option key={preset.id} value={preset.id} style={{ background: 'var(--bg-elevated)', color: 'var(--clr-text)' }}>
-                {preset.label} ({preset.desc})
-              </option>
-            ))}
-          </select>
+          
+          <div style={{ position: 'relative' }}>
+            {/* Dropdown Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="input-dark"
+              style={{
+                width: 'auto',
+                minWidth: 160,
+                padding: '8px 12px',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 12,
+                cursor: 'pointer',
+                color: 'var(--clr-text)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                background: 'var(--bg-elevated)',
+                border: '1.5px solid var(--glass-border)',
+                outline: 'none',
+                textAlign: 'left',
+              }}
+            >
+              <span>{activePreset?.label} ({activePreset?.desc})</span>
+              <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--clr-text-3)' }} />
+            </button>
+
+            {/* Dropdown Options List */}
+            <AnimatePresence>
+              {dropdownOpen && (
+                <>
+                  {/* Invisible overlay to close dropdown on click outside */}
+                  <div 
+                    onClick={() => setDropdownOpen(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 998 }}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 'calc(100% + 6px)',
+                      background: 'rgba(30, 27, 75, 0.92)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: 12,
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px var(--clr-violet-glow)',
+                      padding: 5,
+                      width: 200,
+                      zIndex: 999,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    {ALLOCATION_PRESETS.map(preset => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPreset(preset.id);
+                          setDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          border: 'none',
+                          borderRadius: 8,
+                          background: selectedPreset === preset.id ? 'var(--clr-violet)' : 'transparent',
+                          color: 'var(--clr-text)',
+                          fontWeight: 600,
+                          fontSize: 12,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1,
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedPreset !== preset.id) {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedPreset !== preset.id) {
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: '#fff' }}>{preset.label}</span>
+                        <span style={{ fontSize: 9, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.3px', color: selectedPreset === preset.id ? '#ddd' : 'var(--clr-text-3)' }}>{preset.desc}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Custom Inputs */}
