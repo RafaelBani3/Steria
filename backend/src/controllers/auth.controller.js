@@ -31,11 +31,7 @@ export const register = async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // 2. Verification Token Generation (Expires in 24 hours)
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); 
-    
-    // 3. Create Inactive Account
+    // 3. Create Active Account (isVerified: true by default, no email confirmation required)
     const user = await prisma.user.create({
       data: {
         fullName,
@@ -43,19 +39,31 @@ export const register = async (req, res) => {
         email,
         phoneNumber,
         password: hashedPassword,
-        isVerified: false,
-        verificationToken,
-        verificationTokenExpiry,
+        isVerified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null,
       }
     });
     
-    // 4. Send Verification Email
-    sendVerificationEmail(email, fullName, verificationToken)
-      .catch(err => console.error('Failed to send verification email:', err));
+    // 4. Generate JWT Token directly
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
     res.status(201).json({
-      message: 'Registrasi berhasil! Email verifikasi telah dikirim ✨',
-      userId: user.id
+      message: 'Registrasi berhasil! ✨',
+      token,
+      user: {
+        id: user.id,
+        name: user.fullName, // backward compatibility
+        fullName: user.fullName,
+        email: user.email,
+        username: user.username,
+        phoneNumber: user.phoneNumber,
+        avatarUrl: user.avatarUrl,
+        bio: user.bio,
+        financialGoals: user.financialGoals,
+        monthlyIncomeTarget: user.monthlyIncomeTarget,
+        createdAt: user.createdAt
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

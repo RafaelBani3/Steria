@@ -40,8 +40,13 @@ export const useAuthStore = create((set) => ({
   register: async (fullName, username, email, phoneNumber, password) => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/auth/register', { fullName, username, email, phoneNumber, password });
-      set({ isLoading: false });
+      const response = await api.post('/auth/register', { fullName, username, email, phoneNumber, password });
+      const { token, user } = response.data;
+
+      localStorage.setItem('steria_token', token);
+      localStorage.setItem('steria_user', JSON.stringify(user));
+
+      set({ user, token, isLoading: false });
       return true;
     } catch (error) {
       console.error('Registration error:', error);
