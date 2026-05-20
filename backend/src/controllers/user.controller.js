@@ -6,18 +6,35 @@ export const getProfile = async (req, res) => {
       where: { id: req.user.userId },
       select: {
         id: true,
-        name: true,
+        fullName: true,
         username: true,
         email: true,
-        phone: true,
+        phoneNumber: true,
         bio: true,
-        profilePic: true,
-        incomeTarget: true,
+        avatarUrl: true,
+        monthlyIncomeTarget: true,
         financialGoals: true,
         createdAt: true
       }
     });
-    res.json(user);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
+    }
+
+    // Map database model to frontend keys
+    res.json({
+      id: user.id,
+      name: user.fullName,
+      username: user.username,
+      email: user.email,
+      phone: user.phoneNumber,
+      bio: user.bio,
+      profilePic: user.avatarUrl,
+      incomeTarget: user.monthlyIncomeTarget,
+      financialGoals: user.financialGoals,
+      createdAt: user.createdAt
+    });
   } catch (error) {
     console.error('Get Profile Error:', error);
     res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-3001)' });
@@ -45,17 +62,28 @@ export const updateProfile = async (req, res) => {
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
-        name,
+        fullName: name,
         username,
-        phone,
+        phoneNumber: phone,
         bio,
-        profilePic,
-        incomeTarget: incomeTarget ? parseFloat(incomeTarget) : undefined,
+        avatarUrl: profilePic,
+        monthlyIncomeTarget: incomeTarget ? parseFloat(incomeTarget) : undefined,
         financialGoals
       }
     });
 
-    res.json(user);
+    res.json({
+      id: user.id,
+      name: user.fullName,
+      username: user.username,
+      email: user.email,
+      phone: user.phoneNumber,
+      bio: user.bio,
+      profilePic: user.avatarUrl,
+      incomeTarget: user.monthlyIncomeTarget,
+      financialGoals: user.financialGoals,
+      createdAt: user.createdAt
+    });
   } catch (error) {
     console.error('Update Profile Error:', error);
     res.status(500).json({ error: 'Terjadi Error pada sistem (ERR-3002)' });

@@ -12,18 +12,21 @@ datasource db {
 // USERS
 // ─────────────────────────────────────────────
 model User {
-  id                  String                @id @default(uuid())
-  name                String
-  email               String                @unique
-  password            String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  avatarUrl           String?
-  bio                 String?
-  financialGoals      String?
-  monthlyIncomeTarget Float?
-  phoneNumber         String?
-  username            String?               @unique
+  id                      String                @id @default(uuid())
+  fullName                String                @map("full_name")
+  username                String?               @unique @map("username")
+  email                   String                @unique @map("email")
+  phoneNumber             String?               @map("phone_number")
+  password                String                @map("password")
+  isVerified              Boolean               @default(false) @map("is_verified")
+  verificationToken       String?               @map("verification_token")
+  verificationTokenExpiry DateTime?             @map("verification_token_expiry")
+  createdAt               DateTime              @default(now()) @map("created_at")
+  updatedAt               DateTime              @updatedAt @map("updated_at")
+  avatarUrl               String?               @map("avatar_url")
+  bio                     String?               @map("bio")
+  financialGoals          String?               @map("financial_goals")
+  monthlyIncomeTarget     Float?                @map("monthly_income_target")
 
   accounts            Account[]
   incomes             Income[]

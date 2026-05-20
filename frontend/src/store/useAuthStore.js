@@ -37,16 +37,30 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  register: async (name, email, password) => {
+  register: async (fullName, username, email, phoneNumber, password) => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/auth/register', { name, email, password });
+      await api.post('/auth/register', { fullName, username, email, phoneNumber, password });
       set({ isLoading: false });
       return true;
     } catch (error) {
       console.error('Registration error:', error);
       set({ error: extractErrorMessage(error, 'Registration failed'), isLoading: false });
       return false;
+    }
+  },
+
+  resendVerification: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post('/auth/resend-verification', { email });
+      set({ isLoading: false });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      const errMsg = extractErrorMessage(error, 'Gagal mengirim ulang email verifikasi');
+      set({ error: errMsg, isLoading: false });
+      return { success: false, error: errMsg };
     }
   },
 

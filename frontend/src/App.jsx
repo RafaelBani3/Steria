@@ -8,6 +8,7 @@ import ExpenseTracking from './pages/ExpenseTracking';
 import SavingsTracker from './pages/SavingsTracker';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifySuccess from './pages/VerifySuccess';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import AIChat from './pages/AIChat';
@@ -44,6 +45,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-success" element={<VerifySuccess />} />
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />

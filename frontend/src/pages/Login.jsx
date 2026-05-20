@@ -1,307 +1,1105 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import logo from '../assets/logo1.png';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, 
+  Sparkles, AlertCircle, CheckCircle, RefreshCw, Check 
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-/* ─── Keyframe styles injected once ─── */
-const GLOBAL_STYLES = `
-  @keyframes bgShift {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+// Carousel data for left illustration
+const SLIDES = [
+  {
+    title: "AI Financial Copilot",
+    tagline: "Track. Budget. Grow.",
+    description: "Tanyakan apa saja kepada AI asisten Anda untuk ringkasan pengeluaran otomatis dan rekomendasi keuangan cerdas.",
+    type: "ai",
+    badge: "AI Powered"
+  },
+  {
+    title: "Smart Budgeting",
+    tagline: "Alokasi 50/30/20 Otomatis",
+    description: "Kelola keuangan Anda ke dalam Kebutuhan, Keinginan, dan Tabungan secara langsung dengan visualisasi yang indah.",
+    type: "budget",
+    badge: "Real-time sync"
+  },
+  {
+    title: "Interactive Analytics",
+    tagline: "Visualisasi Data Premium",
+    description: "Pantau kesehatan keuangan Anda melalui grafik prediktif, analisis riwayat, dan manajemen aset terintegrasi.",
+    type: "analytics",
+    badge: "Insight-driven"
   }
-  @keyframes logoFloat {
-    0%, 100% { transform: translateY(0px);  }
-    50%       { transform: translateY(-8px); }
-  }
-  @keyframes borderGlow {
-    0%, 100% { box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(108,76,241,0); }
-    50%       { box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 24px 2px rgba(108,76,241,0.25); }
-  }
-  @keyframes shimmer {
-    0%   { transform: translateX(-150%) skewX(-20deg); }
-    100% { transform: translateX(350%)  skewX(-20deg); }
-  }
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.15; transform: scale(1);   }
-    50%       { opacity: 0.8;  transform: scale(1.4); }
-  }
-  input::placeholder { color: rgba(255,255,255,0.25); }
-`;
-
-/* ─── Deterministic star positions (no re-render flicker) ─── */
-const STARS = Array.from({ length: 30 }, (_, i) => ({
-  id: i,
-  left: ((i * 137.508) % 100).toFixed(2),
-  top:  ((i *  97.333) % 100).toFixed(2),
-  size: (1 + (i % 3)),
-  dur:  2 + (i % 4),
-  delay: (i * 0.3) % 4,
-}));
-
-/* ─── Floating orb ─── */
-const Orb = ({ style, animateExtra = {} }) => (
-  <motion.div
-    animate={{ y: [0, -24, 0], x: [0, 10, 0], scale: [1, 1.06, 1], ...animateExtra }}
-    transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', ...style?.transition }}
-    style={{ position: 'absolute', borderRadius: '50%', pointerEvents: 'none', ...style }}
-  />
-);
-
-/* ─── Stagger variants ─── */
-const formVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.45 } },
-};
-const itemVariants = {
-  hidden:  { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 22 } },
-};
+];
 
 export default function Login() {
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [focused,  setFocused]  = useState('');
-  const { login, isLoading, error } = useAuthStore();
+  const [rememberMe, setRememberMe] = useState(false);
+  const [focused, setFocused] = useState('');
+  const [activeSlide, setActiveSlide] = useState(0);
+  
+  // Custom states for verification warnings
+  const [notVerified, setNotVerified] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const { login, resendVerification, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
+
+  // Carousel timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % SLIDES.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setNotVerified(false);
+    
     const success = await login(email, password);
-    if (success) navigate('/dashboard');
+    if (success) {
+      toast.success('Selamat datang kembali di Steria! ✨');
+      navigate('/dashboard');
+    } else {
+      // Check if user is not verified
+      const storeError = useAuthStore.getState().error;
+      if (storeError && storeError.includes('belum diverifikasi')) {
+        setNotVerified(true);
+      }
+    }
   };
 
-  const inputStyle = (field) => ({
-    width: '100%',
-    background: focused === field ? 'rgba(108,76,241,0.13)' : 'rgba(255,255,255,0.06)',
-    border: focused === field ? '1.5px solid rgba(108,76,241,0.75)' : '1.5px solid rgba(255,255,255,0.1)',
-    borderRadius: '14px',
-    padding: field === 'password' ? '0.85rem 3rem 0.85rem 2.8rem' : '0.85rem 1rem 0.85rem 2.8rem',
-    color: '#fff',
-    fontSize: '0.95rem',
-    outline: 'none',
-    transition: 'all 0.25s ease',
-    boxSizing: 'border-box',
-    boxShadow: focused === field ? '0 0 0 3px rgba(108,76,241,0.18)' : 'none',
-  });
+  const handleResend = async () => {
+    if (!email) return;
+    setResending(true);
+    const result = await resendVerification(email);
+    setResending(false);
+    if (result.success) {
+      toast.success('Email verifikasi baru telah dikirim! Silakan periksa kotak masuk Anda ✨');
+      setNotVerified(false);
+    } else {
+      toast.error(result.error || 'Gagal mengirim ulang email verifikasi.');
+    }
+  };
+
+  const handleForgotPassword = () => {
+    toast.info('Fitur pemulihan kata sandi sedang dalam pengembangan ✨');
+  };
 
   return (
-    <>
-      <style>{GLOBAL_STYLES}</style>
+    <div className="auth-container">
+      {/* ── LEFT SIDE: BRANDING & ILLUSTRATION CAROUSEL (Desktop only) ── */}
+      <div className="auth-left">
+        {/* Soft animated background elements */}
+        <div className="bg-orb purple-orb" />
+        <div className="bg-orb cyan-orb" />
+        
+        {/* Top Header Logo */}
+        <div className="left-header">
+          <div className="logo-text">
+            Steria<span className="logo-dot">.</span>
+          </div>
+        </div>
 
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(-45deg, #0f0c29, #302b63, #1a1040, #24243e, #0d1b2a)',
-        backgroundSize: '400% 400%',
-        animation: 'bgShift 14s ease infinite',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem', position: 'relative', overflow: 'hidden',
-        fontFamily: "'Inter','Segoe UI',sans-serif",
-      }}>
-
-        {/* ── Star particles ── */}
-        {STARS.map(s => (
-          <div key={s.id} style={{
-            position: 'absolute',
-            left: `${s.left}%`, top: `${s.top}%`,
-            width: s.size, height: s.size,
-            borderRadius: '50%',
-            background: '#fff',
-            animation: `twinkle ${s.dur}s ${s.delay}s ease-in-out infinite`,
-            pointerEvents: 'none',
-          }} />
-        ))}
-
-        {/* ── Orbs ── */}
-        <Orb style={{ width: 340, height: 340, background: 'radial-gradient(circle, rgba(108,76,241,0.4) 0%, transparent 70%)', top: '-100px', left: '-100px', transition: { duration: 8 } }} />
-        <Orb style={{ width: 260, height: 260, background: 'radial-gradient(circle, rgba(16,185,129,0.28) 0%, transparent 70%)', bottom: '-70px', right: '-70px', transition: { duration: 9, delay: 1.5 } }} animateExtra={{ x: [0, -12, 0] }} />
-        <Orb style={{ width: 200, height: 200, background: 'radial-gradient(circle, rgba(236,72,153,0.22) 0%, transparent 70%)', top: '38%', right: '8%', transition: { duration: 10, delay: 2.5 } }} />
-
-        {/* ── Card ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, type: 'spring', stiffness: 160, damping: 20 }}
-          style={{
-            width: '100%', maxWidth: '440px',
-            background: 'rgba(255,255,255,0.065)',
-            backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
-            border: '1.5px solid rgba(255,255,255,0.13)',
-            borderRadius: '28px', padding: '2.5rem',
-            animation: 'borderGlow 4s ease-in-out infinite',
-            position: 'relative', zIndex: 10, overflow: 'hidden',
-          }}
-        >
-          {/* Inner highlight line */}
-          <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' }} />
-
-          {/* ── Logo + Header ── */}
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.5 }}
-            style={{ textAlign: 'center', marginBottom: '2rem' }}
-          >
-            <img
-              src={logo}
-              alt="Steria Logo"
-              style={{
-                width: '88px', height: '88px', objectFit: 'contain',
-                margin: '0 auto 0.3rem', display: 'block',
-                filter: 'drop-shadow(0 0 22px rgba(108,76,241,0.7))',
-                animation: 'logoFloat 3.5s ease-in-out infinite',
-              }}
-            />
-
-            {/* Gradient heading */}
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              style={{
-                fontSize: '1.8rem', fontWeight: 800, margin: 0, letterSpacing: '-0.5px',
-                background: 'linear-gradient(135deg, #fff 0%, #c4b5fd 60%, #a78bfa 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Welcome back!
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.45 }}
-              style={{ color: 'rgba(255,255,255,0.45)', marginTop: '0.4rem', fontSize: '0.9rem' }}
-            >
-              Track your spending, manage your budgets, and grow your savings smarter.
-            </motion.p>
-          </motion.div>
-
-          {/* ── Error ── */}
-          {error && (
+        {/* Carousel Content Container */}
+        <div className="carousel-wrapper">
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, x: -12 }}
+              key={activeSlide}
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '0.85rem', marginBottom: '1.25rem' }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="carousel-slide"
             >
-              ⚠️ {error}
-            </motion.div>
-          )}
+              <div className="badge-wrapper">
+                <span className="slide-badge">{SLIDES[activeSlide].badge}</span>
+              </div>
+              <h1 className="slide-title">{SLIDES[activeSlide].title}</h1>
+              <p className="slide-tagline">{SLIDES[activeSlide].tagline}</p>
+              <p className="slide-desc">{SLIDES[activeSlide].description}</p>
 
-          {/* ── Form (staggered) ── */}
-          <motion.form
-            onSubmit={handleSubmit}
-            variants={formVariants}
-            initial="hidden"
-            animate="visible"
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+              {/* Dynamic Interactive Widgets based on slide type */}
+              <div className="illustration-container">
+                {SLIDES[activeSlide].type === 'ai' && (
+                  <div className="ai-illustration">
+                    <motion.div 
+                      animate={{ y: [0, -10, 0] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                      className="glass-card ai-response-card"
+                    >
+                      <div className="card-header">
+                        <div className="ai-avatar">
+                          <Sparkles size={14} color="#06b6d4" />
+                        </div>
+                        <div className="ai-name">Steria Copilot</div>
+                      </div>
+                      <div className="card-body">
+                        "Anda menghemat <span className="highlight-emerald">Rp450.000</span> minggu ini dengan mengurangi pengeluaran kafe & hiburan."
+                      </div>
+                    </motion.div>
+
+                    <div className="pulsating-orb-wrapper">
+                      <div className="core-orb" />
+                      <div className="pulse-ring ring-1" />
+                      <div className="pulse-ring ring-2" />
+                    </div>
+                  </div>
+                )}
+
+                {SLIDES[activeSlide].type === 'budget' && (
+                  <div className="budget-illustration">
+                    <motion.div
+                      animate={{ y: [0, -8, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      className="glass-card budget-card"
+                    >
+                      <div className="budget-title">Distribusi Bulanan</div>
+                      <div className="budget-bars">
+                        <div className="bar-group">
+                          <div className="bar-labels">
+                            <span>Kebutuhan (Needs)</span>
+                            <span>50%</span>
+                          </div>
+                          <div className="bar-bg">
+                            <motion.div initial={{ width: 0 }} animate={{ width: "50%" }} transition={{ duration: 1 }} className="bar-fill purple-fill" />
+                          </div>
+                        </div>
+                        <div className="bar-group">
+                          <div className="bar-labels">
+                            <span>Keinginan (Wants)</span>
+                            <span>30%</span>
+                          </div>
+                          <div className="bar-bg">
+                            <motion.div initial={{ width: 0 }} animate={{ width: "30%" }} transition={{ duration: 1, delay: 0.2 }} className="bar-fill cyan-fill" />
+                          </div>
+                        </div>
+                        <div className="bar-group">
+                          <div className="bar-labels">
+                            <span>Tabungan (Savings)</span>
+                            <span>20%</span>
+                          </div>
+                          <div className="bar-bg">
+                            <motion.div initial={{ width: 0 }} animate={{ width: "20%" }} transition={{ duration: 1, delay: 0.4 }} className="bar-fill emerald-fill" />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+
+                {SLIDES[activeSlide].type === 'analytics' && (
+                  <div className="analytics-illustration">
+                    <motion.div
+                      animate={{ y: [0, -12, 0] }}
+                      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                      className="glass-card chart-card"
+                    >
+                      <div className="chart-header">
+                        <div>
+                          <div className="chart-label">Total Aset Aktif</div>
+                          <div className="chart-amount">Rp24.500.000</div>
+                        </div>
+                        <div className="growth-badge">+15.4%</div>
+                      </div>
+                      <div className="chart-bars">
+                        {[40, 55, 48, 70, 85, 60, 95].map((h, i) => (
+                          <div key={i} className="chart-bar-container">
+                            <motion.div 
+                              initial={{ height: 0 }} 
+                              animate={{ height: `${h}%` }} 
+                              transition={{ duration: 0.8, delay: i * 0.08 }} 
+                              className={`chart-bar-fill ${i === 6 ? 'active-bar' : ''}`}
+                            />
+                            <span className="chart-bar-label">{['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][i]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Carousel indicators */}
+          <div className="carousel-indicators">
+            {SLIDES.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveSlide(index)}
+                className={`indicator-dot ${index === activeSlide ? 'active' : ''}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── RIGHT SIDE: AUTHENTICATION FORM ── */}
+      <div className="auth-right">
+        {/* Soft background glow on mobile */}
+        <div className="mobile-only-orb" />
+
+        <div className="auth-card-wrap">
+          {/* Logo on Mobile */}
+          <div className="mobile-logo-header">
+            Steria<span className="logo-dot">.</span>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="auth-form-card"
           >
-            {/* Email */}
-            <motion.div variants={itemVariants} whileTap={{ scale: 0.995 }}>
-              <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                Email Address
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', opacity: 0.45 }}>✉️</span>
-                <input
-                  required type="email" value={email}
-                  onFocus={() => setFocused('email')} onBlur={() => setFocused('')}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  style={inputStyle('email')}
-                />
-              </div>
-            </motion.div>
+            <div className="form-header">
+              <h2 className="form-title">Masuk ke Akun</h2>
+              <p className="form-subtitle">Kelola dan kembangkan finansial Anda secara otomatis</p>
+            </div>
 
-            {/* Password */}
-            <motion.div variants={itemVariants} whileTap={{ scale: 0.995 }}>
-              <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.4rem', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', opacity: 0.45 }}>🔒</span>
-                <input
-                  required type={showPass ? 'text' : 'password'} value={password}
-                  onFocus={() => setFocused('password')} onBlur={() => setFocused('')}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={inputStyle('password')}
-                />
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: 0.55, color: '#fff', padding: 0 }}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </motion.div>
+            {/* Error Handlers (Soft & clean UI) */}
+            <AnimatePresence>
+              {error && !notVerified && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="error-banner"
+                >
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
 
-            {/* Submit button with shimmer */}
-            <motion.div variants={itemVariants}>
+              {notVerified && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="error-banner verification-warning"
+                >
+                  <AlertCircle size={16} color="#f59e0b" />
+                  <div className="warning-content">
+                    <p style={{ fontWeight: 600, margin: 0 }}>Email belum diverifikasi.</p>
+                    <p style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px', marginBottom: '8px' }}>
+                      Silakan verifikasi email Anda untuk dapat masuk ke dashboard.
+                    </p>
+                    <button 
+                      type="button" 
+                      onClick={handleResend}
+                      disabled={resending}
+                      className="resend-inline-btn"
+                    >
+                      {resending ? (
+                        <>Mengirim... <Loader2 size={12} className="animate-spin" /></>
+                      ) : (
+                        <>Kirim ulang email verifikasi <RefreshCw size={12} /></>
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              {/* Email Input */}
+              <div className="input-group">
+                <label className="input-label">Alamat Email</label>
+                <div className={`input-field-wrapper ${focused === 'email' ? 'focused' : ''}`}>
+                  <Mail size={18} className="input-icon" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onFocus={() => setFocused('email')}
+                    onBlur={() => setFocused('')}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="auth-input"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="input-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="input-label">Kata Sandi</label>
+                  <button 
+                    type="button" 
+                    onClick={handleForgotPassword} 
+                    className="forgot-password-link"
+                  >
+                    Lupa Kata Sandi?
+                  </button>
+                </div>
+                <div className={`input-field-wrapper ${focused === 'password' ? 'focused' : ''}`}>
+                  <Lock size={18} className="input-icon" />
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onFocus={() => setFocused('password')}
+                    onBlur={() => setFocused('')}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="auth-input"
+                    style={{ paddingRight: '44px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="password-toggle-btn"
+                  >
+                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember me */}
+              <div className="remember-me-container">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="auth-checkbox"
+                  />
+                  <span className="checkbox-custom">
+                    {rememberMe && <Check size={12} color="#fff" strokeWidth={3} />}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#9ca3af', userSelect: 'none' }}>Ingat Saya</span>
+                </label>
+              </div>
+
+              {/* Submit Button */}
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                whileHover={{ scale: 1.025 }}
-                whileTap={{ scale: 0.965 }}
-                style={{
-                  marginTop: '0.5rem', width: '100%', padding: '0.95rem',
-                  background: isLoading ? 'rgba(108,76,241,0.4)' : 'linear-gradient(135deg, #6C4CF1 0%, #a855f7 100%)',
-                  border: 'none', borderRadius: '14px', color: '#fff',
-                  fontWeight: 700, fontSize: '1rem',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 32px rgba(108,76,241,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: '0.5rem', letterSpacing: '0.3px',
-                  position: 'relative', overflow: 'hidden',
-                }}
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
+                className="submit-btn"
               >
-                {/* Shimmer sweep */}
-                {!isLoading && (
-                  <motion.span
-                    animate={{ x: ['-150%', '350%'] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: 'linear', repeatDelay: 1.5 }}
-                    style={{
-                      position: 'absolute', top: 0, left: 0,
-                      width: '40%', height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
-                      transform: 'skewX(-20deg)', pointerEvents: 'none',
-                    }}
-                  />
-                )}
                 {isLoading ? (
                   <>
-                    <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ display: 'inline-block' }}>⏳</motion.span>
-                    Signing in...
+                    <Loader2 size={16} className="animate-spin" />
+                    Memproses...
                   </>
                 ) : (
-                  <>Sign In →</>
+                  <>
+                    Masuk ke Akun
+                    <ArrowRight size={16} />
+                  </>
                 )}
               </motion.button>
-            </motion.div>
-          </motion.form>
+            </form>
 
-          {/* ── Divider ── */}
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.5rem 0' }}
-          >
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-            <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', letterSpacing: '1px' }}>NEW HERE?</span>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <div className="form-footer">
+              <span style={{ color: '#9ca3af' }}>Belum punya akun?</span>{' '}
+              <Link to="/register" className="auth-redirect-link">
+                Daftar sekarang
+              </Link>
+            </div>
           </motion.div>
-
-          {/* ── Register link ── */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}>
-            <Link to="/register"
-              style={{ display: 'block', textAlign: 'center', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600, background: 'rgba(255,255,255,0.04)', transition: 'all 0.2s ease' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
-            >
-              Create a free account ✨
-            </Link>
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
-    </>
+
+      {/* Embedded CSS styling for modern, premium appearance */}
+      <style>{`
+        /* Container and base grids */
+        .auth-container {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1fr;
+          background-color: #070a13;
+          font-family: 'Inter', sans-serif;
+          color: #fff;
+          overflow: hidden;
+          position: relative;
+        }
+
+        @media (min-width: 1024px) {
+          .auth-container {
+            grid-template-columns: 1.1fr 0.9fr;
+          }
+        }
+
+        /* Left Branding Panel */
+        .auth-left {
+          display: none;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 60px 80px;
+          background: radial-gradient(circle at 10% 10%, #0d1324 0%, #070a13 100%);
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          position: relative;
+          overflow: hidden;
+        }
+
+        @media (min-width: 1024px) {
+          .auth-left {
+            display: flex;
+          }
+        }
+
+        /* Ambient Orbs */
+        .bg-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          pointer-events: none;
+          opacity: 0.45;
+        }
+
+        .purple-orb {
+          top: -100px;
+          left: -100px;
+          width: 400px;
+          height: 400px;
+          background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, transparent 70%);
+        }
+
+        .cyan-orb {
+          bottom: -100px;
+          right: -100px;
+          width: 400px;
+          height: 400px;
+          background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%);
+        }
+
+        .mobile-only-orb {
+          position: absolute;
+          top: -150px;
+          right: -100px;
+          width: 350px;
+          height: 350px;
+          background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, transparent 70%);
+          border-radius: 50%;
+          filter: blur(60px);
+          pointer-events: none;
+        }
+
+        @media (min-width: 1024px) {
+          .mobile-only-orb {
+            display: none;
+          }
+        }
+
+        /* Branding logo styles */
+        .left-header {
+          position: relative;
+          z-index: 10;
+        }
+
+        .logo-text {
+          font-size: 24px;
+          font-weight: 900;
+          letter-spacing: -0.5px;
+        }
+
+        .logo-dot {
+          color: #06b6d4;
+        }
+
+        /* Carousel Panel */
+        .carousel-wrapper {
+          position: relative;
+          z-index: 10;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          margin-top: 40px;
+        }
+
+        .carousel-slide {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          width: 100%;
+        }
+
+        .badge-wrapper {
+          margin-bottom: 16px;
+        }
+
+        .slide-badge {
+          background: rgba(124, 58, 237, 0.12);
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          color: #a78bfa;
+          padding: 6px 14px;
+          border-radius: 99px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .slide-title {
+          font-size: 40px;
+          font-weight: 850;
+          margin: 0;
+          letter-spacing: -1px;
+          line-height: 1.15;
+          background: linear-gradient(135deg, #fff 0%, #d1d5db 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fillColor: transparent;
+        }
+
+        .slide-tagline {
+          font-size: 15px;
+          font-weight: 700;
+          color: #06b6d4;
+          margin: 8px 0 16px;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+
+        .slide-desc {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #9ca3af;
+          max-width: 440px;
+          margin: 0 0 40px 0;
+        }
+
+        .carousel-indicators {
+          display: flex;
+          gap: 8px;
+          margin-top: 32px;
+        }
+
+        .indicator-dot {
+          width: 24px;
+          height: 4px;
+          border-radius: 2px;
+          background: rgba(255, 255, 255, 0.15);
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          padding: 0;
+        }
+
+        .indicator-dot.active {
+          background: #7c3aed;
+          width: 40px;
+        }
+
+        /* Widgets and Illustrations */
+        .illustration-container {
+          width: 100%;
+          min-height: 240px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          position: relative;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        /* AI Illustration styles */
+        .ai-illustration {
+          position: relative;
+          width: 100%;
+          display: flex;
+          align-items: center;
+        }
+
+        .ai-response-card {
+          max-width: 320px;
+          z-index: 10;
+          border-left: 3px solid #7c3aed;
+        }
+
+        .card-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .ai-avatar {
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .ai-name {
+          font-size: 12px;
+          font-weight: 700;
+          color: #e5e7eb;
+        }
+
+        .card-body {
+          font-size: 13px;
+          line-height: 1.5;
+          color: #9ca3af;
+        }
+
+        .highlight-emerald {
+          color: #34d399;
+          font-weight: 700;
+        }
+
+        .pulsating-orb-wrapper {
+          position: absolute;
+          left: 280px;
+          width: 100px;
+          height: 100px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .core-orb {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #06b6d4 0%, #7c3aed 100%);
+          box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+          z-index: 5;
+        }
+
+        .pulse-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1.5px solid rgba(6, 182, 212, 0.25);
+          width: 100%;
+          height: 100%;
+          animation: pulse 4s infinite linear;
+        }
+
+        .ring-2 {
+          animation-delay: 2s;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(0.3); opacity: 1; }
+          100% { transform: scale(1.2); opacity: 0; }
+        }
+
+        /* Budget Illustration */
+        .budget-card {
+          width: 320px;
+        }
+
+        .budget-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #e5e7eb;
+          margin-bottom: 16px;
+        }
+
+        .budget-bars {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .bar-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .bar-labels {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
+        }
+
+        .bar-bg {
+          width: 100%;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 3px;
+          overflow: hidden;
+        }
+
+        .bar-fill {
+          height: 100%;
+          border-radius: 3px;
+        }
+
+        .purple-fill { background: #7c3aed; }
+        .cyan-fill { background: #06b6d4; }
+        .emerald-fill { background: #10b981; }
+
+        /* Chart Illustration */
+        .chart-card {
+          width: 340px;
+        }
+
+        .chart-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 24px;
+        }
+
+        .chart-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
+        }
+
+        .chart-amount {
+          font-size: 18px;
+          font-weight: 800;
+          color: #fff;
+          margin-top: 2px;
+        }
+
+        .growth-badge {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          color: #34d399;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 4px 8px;
+          border-radius: 6px;
+        }
+
+        .chart-bars {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          height: 100px;
+          padding-top: 10px;
+        }
+
+        .chart-bar-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+        }
+
+        .chart-bar-fill {
+          width: 14px;
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 4px;
+          transition: all 0.3s ease;
+        }
+
+        .active-bar {
+          background: linear-gradient(180deg, #7c3aed 0%, #3b82f6 100%);
+          box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+        }
+
+        .chart-bar-label {
+          font-size: 9px;
+          font-weight: 600;
+          color: #6b7280;
+        }
+
+        /* Right Authentication Panel */
+        .auth-right {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: 40px 24px;
+          position: relative;
+          z-index: 10;
+        }
+
+        @media (min-width: 640px) {
+          .auth-right {
+            padding: 60px 48px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .auth-right {
+            padding: 80px;
+            background: #080c18;
+          }
+        }
+
+        .auth-card-wrap {
+          width: 100%;
+          max-width: 420px;
+          margin: 0 auto;
+        }
+
+        .mobile-logo-header {
+          font-size: 24px;
+          font-weight: 900;
+          margin-bottom: 32px;
+          text-align: center;
+        }
+
+        @media (min-width: 1024px) {
+          .mobile-logo-header {
+            display: none;
+          }
+        }
+
+        .auth-form-card {
+          width: 100%;
+        }
+
+        .form-header {
+          margin-bottom: 28px;
+        }
+
+        .form-title {
+          font-size: 26px;
+          font-weight: 800;
+          margin: 0;
+          letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+          font-size: 14px;
+          color: #9ca3af;
+          margin: 6px 0 0 0;
+        }
+
+        /* Error/Warning Banners */
+        .error-banner {
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.15);
+          color: #fca5a5;
+          padding: 12px 16px;
+          border-radius: 12px;
+          font-size: 13.5px;
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          box-sizing: border-box;
+        }
+
+        .verification-warning {
+          background: rgba(245, 158, 11, 0.08);
+          border: 1px solid rgba(245, 158, 11, 0.15);
+          color: #fde68a;
+        }
+
+        .warning-content {
+          flex: 1;
+        }
+
+        .resend-inline-btn {
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+          color: #fbbf24;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s;
+        }
+
+        .resend-inline-btn:hover {
+          background: rgba(245, 158, 11, 0.2);
+        }
+
+        /* Form Controls */
+        .auth-form {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .input-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #9ca3af;
+        }
+
+        .input-field-wrapper {
+          display: flex;
+          align-items: center;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 12px;
+          padding: 0 16px;
+          transition: all 0.25s ease;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        .input-field-wrapper:hover {
+          border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-field-wrapper.focused {
+          background: rgba(124, 58, 237, 0.06);
+          border-color: #7c3aed;
+          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        }
+
+        .input-icon {
+          color: #9ca3af;
+          margin-right: 12px;
+        }
+
+        .auth-input {
+          flex: 1;
+          height: 48px;
+          background: none;
+          border: none;
+          color: #fff;
+          font-size: 14.5px;
+          outline: none;
+          padding: 0;
+          box-sizing: border-box;
+          width: 100%;
+        }
+
+        .auth-input::placeholder {
+          color: #4b5563;
+        }
+
+        .password-toggle-btn {
+          position: absolute;
+          right: 14px;
+          background: none;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+        }
+
+        .password-toggle-btn:hover {
+          color: #fff;
+        }
+
+        .forgot-password-link {
+          background: none;
+          border: none;
+          color: #a78bfa;
+          font-size: 12.5px;
+          font-weight: 500;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .forgot-password-link:hover {
+          text-decoration: underline;
+        }
+
+        /* Checkbox remembered */
+        .remember-me-container {
+          margin-top: 4px;
+        }
+
+        .checkbox-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+
+        .auth-checkbox {
+          display: none;
+        }
+
+        .checkbox-custom {
+          width: 18px;
+          height: 18px;
+          border-radius: 5px;
+          border: 1.5px solid rgba(255, 255, 255, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .checkbox-label:hover .checkbox-custom {
+          border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .auth-checkbox:checked + .checkbox-custom {
+          background: #7c3aed;
+          border-color: #7c3aed;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+          margin-top: 10px;
+          height: 50px;
+          width: 100%;
+          background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+          border: none;
+          border-radius: 12px;
+          color: #fff;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+          transition: all 0.2s;
+        }
+
+        .submit-btn:disabled {
+          background: rgba(255,255,255,0.08);
+          color: #6b7280;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .form-footer {
+          margin-top: 24px;
+          text-align: center;
+          font-size: 13.5px;
+        }
+
+        .auth-redirect-link {
+          color: #a78bfa;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .auth-redirect-link:hover {
+          text-decoration: underline;
+        }
+      `}</style>
+    </div>
   );
 }
