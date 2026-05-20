@@ -95,28 +95,44 @@ export default function SavingsTracker() {
           {goals.map((goal, i) => {
             const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
             return (
-              <motion.div key={goal.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="stat-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)', marginBottom: 3 }}>{goal.goalName}</p>
-                    <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>{goal.savingsAccount?.providerName || 'Savings Account'}</p>
+            return (
+              <motion.div key={goal.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="glass" style={{ padding: '24px', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: pct >= 100 ? 'var(--clr-emerald)' : 'var(--clr-cyan)' }} />
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(16,185,129,0.1)', color: 'var(--clr-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Target size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontWeight: 700, fontSize: 16, color: 'var(--clr-text)', marginBottom: 2 }}>{goal.goalName}</h3>
+                      <p style={{ fontSize: 12, color: 'var(--clr-text-3)' }}>{goal.savingsAccount?.accountName} • {goal.savingsAccount?.providerName}</p>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <span className="badge badge-emerald" style={{ fontSize: 10 }}>{Math.round(pct)}%</span>
-                    <button onClick={() => { setTransferForm((f) => ({ ...f, savingsGoalId: goal.id, destinationSavingsAccountId: goal.savingsAccountId, sourceAccountId: goal.savingsAccountId })); setShowTransferForm(true); }} style={{ padding: 5, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, cursor: 'pointer', color: 'var(--clr-emerald)', fontSize: 10, fontFamily: 'inherit', fontWeight: 600 }}>+Fund</button>
-                    <button onClick={() => handleDeleteGoal(goal)} style={{ padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8 }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}>
-                      <Trash2 size={13} />
+                  
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => { setTransferForm((f) => ({ ...f, savingsGoalId: goal.id, destinationSavingsAccountId: goal.savingsAccountId, sourceAccountId: goal.savingsAccountId })); setShowTransferForm(true); }} className="btn-ghost" style={{ padding: '6px 12px', fontSize: 11, color: 'var(--clr-emerald)', background: 'rgba(16,185,129,0.1)', borderRadius: '8px' }}>
+                      + Fund
+                    </button>
+                    <button onClick={() => handleDeleteGoal(goal)} className="btn-ghost" style={{ padding: '6px 8px', color: 'var(--clr-rose)', borderRadius: '8px' }}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
-                <div style={{ marginBottom: 10 }}>
-                  <p className="font-display" style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-emerald)' }}>{formatRp(goal.currentAmount)}</p>
-                  <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>of {formatRp(goal.targetAmount)} target</p>
+
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginBottom: 12 }}>
+                  <h4 className="font-display" style={{ fontSize: 28, fontWeight: 800, color: 'var(--clr-text)', lineHeight: 1 }}>{formatRp(goal.currentAmount)}</h4>
+                  <p style={{ fontSize: 13, color: 'var(--clr-text-3)', paddingBottom: 3 }}>/ {formatRp(goal.targetAmount)}</p>
                 </div>
-                <div className="progress-bar">
-                  <motion.div className="progress-fill" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, delay: i * 0.1 }} style={{ background: pct >= 100 ? 'var(--grad-emerald)' : 'var(--grad-cyan)' }} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: pct >= 100 ? 'var(--clr-emerald)' : 'var(--clr-cyan)' }}>{Math.round(pct)}% Achieved</span>
+                  {goal.targetDate && <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>Target: {new Date(goal.targetDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                 </div>
-                {goal.targetDate && <p style={{ fontSize: 11, color: 'var(--clr-text-3)', marginTop: 8 }}>🗓 Target: {new Date(goal.targetDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                
+                <div className="progress-bar" style={{ height: 6, borderRadius: 3 }}>
+                  <motion.div className="progress-fill" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, delay: i * 0.1 }} style={{ background: pct >= 100 ? 'var(--grad-emerald)' : 'var(--grad-cyan)', borderRadius: 3 }} />
+                </div>
               </motion.div>
             );
           })}
@@ -190,32 +206,42 @@ export default function SavingsTracker() {
                 <button onClick={() => setShowTransferForm(false)} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}><X size={18} /></button>
               </div>
               <form onSubmit={handleTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>From (Source Account) *</label>
-                  <select className="input-dark" value={transferForm.sourceAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, sourceAccountId: e.target.value }))} required>
-                    <option value="">Select source account...</option>
-                    <optgroup label="Savings Accounts (Allocate existing balance)">
-                      {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
-                    </optgroup>
-                    <optgroup label="Cashflow Accounts (Transfer new money)">
-                      {cashflowAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
-                    </optgroup>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>To (Savings) *</label>
-                  <select className="input-dark" value={transferForm.destinationSavingsAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, destinationSavingsAccountId: e.target.value }))} required>
-                    <option value="">Select savings account...</option>
-                    {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — {acc.providerName}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>Link to Goal (optional)</label>
-                  <select className="input-dark" value={transferForm.savingsGoalId} onChange={(e) => setTransferForm((f) => ({ ...f, savingsGoalId: e.target.value }))}>
-                    <option value="">— No specific goal —</option>
-                    {goals.map((g) => <option key={g.id} value={g.id}>{g.goalName} ({Math.round((g.currentAmount / g.targetAmount) * 100)}%)</option>)}
-                  </select>
-                </div>
+                {transferForm.savingsGoalId && transferForm.sourceAccountId === transferForm.destinationSavingsAccountId ? (
+                  <div style={{ padding: '16px', background: 'var(--bg-glass)', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '4px' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--clr-text)', lineHeight: 1.5 }}>
+                      Alokasi dana ke goal <strong>{goals.find(g => g.id === transferForm.savingsGoalId)?.goalName}</strong> menggunakan saldo dari tabungan <strong>{savingsAccounts.find(a => a.id === transferForm.sourceAccountId)?.accountName}</strong>.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>From (Source Account) *</label>
+                      <select className="input-dark" value={transferForm.sourceAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, sourceAccountId: e.target.value }))} required>
+                        <option value="">Select source account...</option>
+                        <optgroup label="Savings Accounts (Allocate existing balance)">
+                          {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                        </optgroup>
+                        <optgroup label="Cashflow Accounts (Transfer new money)">
+                          {cashflowAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>To (Savings) *</label>
+                      <select className="input-dark" value={transferForm.destinationSavingsAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, destinationSavingsAccountId: e.target.value }))} required>
+                        <option value="">Select savings account...</option>
+                        {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — {acc.providerName}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>Link to Goal (optional)</label>
+                      <select className="input-dark" value={transferForm.savingsGoalId} onChange={(e) => setTransferForm((f) => ({ ...f, savingsGoalId: e.target.value }))}>
+                        <option value="">— No specific goal —</option>
+                        {goals.map((g) => <option key={g.id} value={g.id}>{g.goalName} ({Math.round((g.currentAmount / g.targetAmount) * 100)}%)</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>Amount (Rp) *</label>
                   <input
