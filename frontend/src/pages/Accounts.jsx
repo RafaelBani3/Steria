@@ -412,10 +412,15 @@ function AccountDetailsModal({ account, onClose }) {
       label: 'Terima Alokasi (Budget)',
       color: 'var(--clr-cyan)',
       bg: 'rgba(6,182,212,0.12)',
-      icon: <ArrowUpRight size={16} />,
+      icon: <ArrowDownLeft size={16} />,
       sign: '+'
     }
   };
+
+  const totalTransactions = selectedAccountHistory?.length || 0;
+  const totalExpenses = (selectedAccountHistory || [])
+    .filter(tx => tx.type === 'EXPENSE' || tx.type === 'ALLOCATION_OUT')
+    .reduce((sum, tx) => sum + tx.amount, 0);
 
   return (
     <motion.div
@@ -457,7 +462,7 @@ function AccountDetailsModal({ account, onClose }) {
         <div style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
           border: '1px solid var(--glass-border)',
-          borderRadius: 16, padding: '16px 18px', marginBottom: 20, textAlign: 'center', flexShrink: 0
+          borderRadius: 16, padding: '16px 18px', marginBottom: 16, textAlign: 'center', flexShrink: 0
         }}>
           <p style={{ fontSize: 11, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Saldo Saat Ini</p>
           <h3 className="font-display" style={{ fontSize: 26, fontWeight: 800, color: account.accountType === 'SAVINGS' ? 'var(--clr-emerald)' : 'var(--clr-text)' }}>
@@ -465,12 +470,24 @@ function AccountDetailsModal({ account, onClose }) {
           </h3>
         </div>
 
+        {/* Summary Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20, flexShrink: 0 }}>
+          <div className="glass" style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
+            <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Total Pengeluaran</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-rose)' }}>{formatRp(totalExpenses)}</p>
+          </div>
+          <div className="glass" style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
+            <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Total Transaksi</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-text)' }}>{totalTransactions}x</p>
+          </div>
+        </div>
+
         <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0 }}>
           Riwayat Transaksi
         </p>
 
         {/* Transaction list */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
           {isLoadingHistory ? (
             [1, 2, 3].map((i) => (
               <div key={i} className="shimmer" style={{ height: 60, borderRadius: 12 }} />
@@ -484,33 +501,30 @@ function AccountDetailsModal({ account, onClose }) {
             selectedAccountHistory.map((tx) => {
               const cfg = typeConfig[tx.type] || { label: 'Transaksi', color: 'var(--clr-text)', bg: 'rgba(255,255,255,0.1)', icon: <ArrowLeftRight size={16} />, sign: '' };
               return (
-                <div key={tx.id} className="glass" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
+                <div key={tx.id} className="glass" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px', borderRadius: 14, border: '1px solid var(--glass-border)' }}>
                   <div style={{
-                    width: 36, height: 36, borderRadius: 10,
+                    width: 38, height: 38, borderRadius: 12,
                     background: cfg.bg, color: cfg.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                   }}>
                     {cfg.icon}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--clr-text)', marginBottom: 4, lineHeight: 1.3 }}>
                       {tx.title}
                     </p>
-                    <p style={{ fontSize: 11, color: 'var(--clr-text-3)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                      <span>{cfg.label}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
                       {tx.details && (
-                        <>
-                          <span>•</span>
-                          <span style={{ color: 'var(--clr-text-2)' }}>{tx.details}</span>
-                        </>
+                        <span style={{ fontSize: 11, color: 'var(--clr-text-3)', lineHeight: 1.4 }}>{tx.details}</span>
                       )}
-                    </p>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: cfg.color }}>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: cfg.color, marginBottom: 4 }}>
                       {cfg.sign}{formatRp(tx.amount)}
                     </p>
-                    <p style={{ fontSize: 10, color: 'var(--clr-text-3)', marginTop: 2 }}>
+                    <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
                       {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
