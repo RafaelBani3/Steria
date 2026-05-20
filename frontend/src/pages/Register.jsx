@@ -45,9 +45,8 @@ export default function Register() {
   const [showRetypePass, setShowRetypePass] = useState(false);
   const [focused, setFocused] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
-  const [registeredEmail, setRegisteredEmail] = useState(null);
 
-  const { register, resendVerification, isLoading, error } = useAuthStore();
+  const { register, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
   // Carousel timer
@@ -79,16 +78,6 @@ export default function Register() {
     if (success) {
       toast.success('Pendaftaran berhasil! Selamat datang di Steria 🎉');
       navigate('/dashboard');
-    }
-  };
-
-  const handleResend = async () => {
-    if (!registeredEmail) return;
-    const result = await resendVerification(registeredEmail);
-    if (result.success) {
-      toast.success('Email verifikasi telah dikirim ulang ✨');
-    } else {
-      toast.error(result.error || 'Gagal mengirim ulang email verifikasi.');
     }
   };
 
@@ -204,15 +193,14 @@ export default function Register() {
           </div>
 
           <AnimatePresence mode="wait">
-            {!registeredEmail ? (
-              <motion.div
-                key="signup-form"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="auth-form-card"
-              >
+            <motion.div
+              key="signup-form"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="auth-form-card"
+            >
                 <div className="form-header">
                   <h2 className="form-title">Daftar Akun Baru</h2>
                   <p className="form-subtitle">Mulai kelola aset dan pengeluaran Anda dengan cerdas</p>
@@ -406,63 +394,12 @@ export default function Register() {
                 </form>
 
                 <div className="form-footer">
-                  <span style={{ color: 'var(--t3, #64748B)' }}>Sudah punya akun?</span>{' '}
+                  <span style={{ color: '#9ca3af' }}>Sudah punya akun?</span>{' '}
                   <Link to="/login" className="auth-redirect-link">
                     Masuk sekarang
                   </Link>
                 </div>
               </motion.div>
-            ) : (
-              /* Success Flow: Instruction to verify email */
-              <motion.div
-                key="signup-success"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, type: 'spring' }}
-                className="success-overlay-card"
-              >
-                <div className="success-icon-wrap">
-                  <CheckCircle2 size={40} color="#10b981" />
-                </div>
-                
-                <h2 className="success-title">Periksa Email Anda! 📩</h2>
-                <p className="success-desc">
-                  Tautan aktivasi telah dikirim ke <span className="highlight-email">{registeredEmail}</span>. 
-                  Silakan periksa kotak masuk (atau folder spam) untuk mengaktifkan akun Anda.
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '8px' }}>
-                  <motion.button
-                    onClick={() => navigate('/login')}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="submit-btn"
-                  >
-                    Ke Halaman Masuk
-                  </motion.button>
-                  
-                  <button 
-                    onClick={handleResend}
-                    className="btn-link"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#a78bfa',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      marginTop: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    Tidak menerima email? Kirim ulang <RefreshCw size={13} />
-                  </button>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </div>
@@ -470,13 +407,12 @@ export default function Register() {
       <style>{`
         /* Reuse baseline layouts from login page styled globally */
         .auth-container {
-          height: 100vh;
-          max-height: 100vh;
+          min-height: 100vh;
           display: grid;
           grid-template-columns: 1fr;
-          background-color: var(--bg, #EEF2F6);
+          background-color: #070a13;
           font-family: 'Inter', sans-serif;
-          color: var(--t1, #0F172A);
+          color: #fff;
           overflow: hidden;
           position: relative;
         }
@@ -491,13 +427,11 @@ export default function Register() {
           display: none;
           flex-direction: column;
           justify-content: space-between;
-          padding: 40px 60px;
-          background: radial-gradient(circle at 10% 10%, #F1F5F9 0%, #EEF2F6 100%);
-          border-right: 1px solid rgba(15, 23, 42, 0.06);
+          padding: 60px 80px;
+          background: radial-gradient(circle at 10% 10%, #0d1324 0%, #070a13 100%);
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
           position: relative;
           overflow: hidden;
-          height: 100vh;
-          max-height: 100vh;
         }
 
         @media (min-width: 1024px) {
@@ -519,7 +453,7 @@ export default function Register() {
           left: -100px;
           width: 400px;
           height: 400px;
-          background: radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, transparent 70%);
         }
 
         .cyan-orb {
@@ -527,7 +461,7 @@ export default function Register() {
           right: -100px;
           width: 400px;
           height: 400px;
-          background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%);
         }
 
         .mobile-only-orb {
@@ -536,7 +470,7 @@ export default function Register() {
           right: -100px;
           width: 350px;
           height: 350px;
-          background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, transparent 70%);
           border-radius: 50%;
           filter: blur(60px);
           pointer-events: none;
@@ -557,11 +491,10 @@ export default function Register() {
           font-size: 24px;
           font-weight: 900;
           letter-spacing: -0.5px;
-          color: var(--t1, #0F172A);
         }
 
         .logo-dot {
-          color: var(--cyan, #06b6d4);
+          color: #06b6d4;
         }
 
         .carousel-wrapper {
@@ -571,7 +504,7 @@ export default function Register() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          margin-top: 20px;
+          margin-top: 40px;
         }
 
         .carousel-slide {
@@ -582,13 +515,13 @@ export default function Register() {
         }
 
         .badge-wrapper {
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
 
         .slide-badge {
-          background: rgba(99, 102, 241, 0.08);
-          border: 1px solid rgba(99, 102, 241, 0.18);
-          color: #4F46E5;
+          background: rgba(124, 58, 237, 0.12);
+          border: 1px solid rgba(124, 58, 237, 0.2);
+          color: #a78bfa;
           padding: 6px 14px;
           border-radius: 99px;
           font-size: 11px;
@@ -598,44 +531,44 @@ export default function Register() {
         }
 
         .slide-title {
-          font-size: 36px;
+          font-size: 40px;
           font-weight: 850;
           margin: 0;
           letter-spacing: -1px;
           line-height: 1.15;
-          background: linear-gradient(135deg, #0F172A 0%, #475569 100%);
+          background: linear-gradient(135deg, #fff 0%, #d1d5db 100%);
           -webkit-background-clip: text;
           -webkit-text-fillColor: transparent;
         }
 
         .slide-tagline {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 700;
-          color: var(--violet, #6366F1);
-          margin: 6px 0 12px;
+          color: #06b6d4;
+          margin: 8px 0 16px;
           letter-spacing: 1px;
           text-transform: uppercase;
         }
 
         .slide-desc {
-          font-size: 14px;
+          font-size: 15px;
           line-height: 1.6;
-          color: var(--t2, #475569);
+          color: #9ca3af;
           max-width: 440px;
-          margin: 0 0 24px 0;
+          margin: 0 0 40px 0;
         }
 
         .carousel-indicators {
           display: flex;
           gap: 8px;
-          margin-top: 24px;
+          margin-top: 32px;
         }
 
         .indicator-dot {
           width: 24px;
           height: 4px;
           border-radius: 2px;
-          background: rgba(15, 23, 42, 0.12);
+          background: rgba(255, 255, 255, 0.15);
           border: none;
           cursor: pointer;
           transition: all 0.3s ease;
@@ -643,13 +576,13 @@ export default function Register() {
         }
 
         .indicator-dot.active {
-          background: var(--violet, #6366F1);
+          background: #7c3aed;
           width: 40px;
         }
 
         .illustration-container {
           width: 100%;
-          min-height: 200px;
+          min-height: 240px;
           display: flex;
           align-items: center;
           justify-content: flex-start;
@@ -657,32 +590,32 @@ export default function Register() {
         }
 
         .glass-card {
-          background: rgba(255, 255, 255, 0.75);
+          background: rgba(255, 255, 255, 0.03);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(15, 23, 42, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.07);
           border-radius: 16px;
-          padding: 20px;
-          box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+          padding: 24px;
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
         }
 
         /* Welcome Slide Card */
         .welcome-card {
           width: 280px;
-          border-left: 3px solid var(--emerald, #10b981);
+          border-left: 3px solid #10b981;
         }
 
         .card-lbl {
           font-size: 11px;
           font-weight: 600;
-          color: var(--t3, #64748B);
+          color: #9ca3af;
           text-transform: uppercase;
         }
 
         .card-val {
           font-size: 24px;
           font-weight: 800;
-          color: var(--t1, #0F172A);
+          color: #fff;
           margin: 6px 0 8px;
         }
 
@@ -691,13 +624,13 @@ export default function Register() {
           align-items: center;
           font-size: 12px;
           font-weight: 700;
-          color: var(--emerald, #10b981);
+          color: #10b981;
         }
 
         /* AI Slide Card */
         .ai-response-card {
           max-width: 320px;
-          border-left: 3px solid var(--violet, #6366F1);
+          border-left: 3px solid #7c3aed;
         }
 
         .card-header {
@@ -711,8 +644,8 @@ export default function Register() {
           width: 24px;
           height: 24px;
           border-radius: 6px;
-          background: rgba(6, 182, 212, 0.08);
-          border: 1px solid rgba(6, 182, 212, 0.18);
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.2);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -721,24 +654,24 @@ export default function Register() {
         .ai-name {
           font-size: 12px;
           font-weight: 700;
-          color: var(--t1, #0F172A);
+          color: #e5e7eb;
         }
 
         .card-body {
           font-size: 13px;
           line-height: 1.5;
-          color: var(--t2, #475569);
+          color: #9ca3af;
         }
 
         .highlight-emerald {
-          color: #10B981;
+          color: #34d399;
           font-weight: 700;
         }
 
         /* Security Card */
         .security-card {
           max-width: 300px;
-          border-left: 3px solid var(--cyan, #06b6d4);
+          border-left: 3px solid #06b6d4;
         }
 
         .security-title {
@@ -748,14 +681,13 @@ export default function Register() {
           flex-direction: column;
           gap: 6px;
           margin-bottom: 12px;
-          color: var(--t1, #0F172A);
         }
 
         .secure-badge {
           align-self: flex-start;
-          background: rgba(6, 182, 212, 0.08);
-          border: 1px solid rgba(6, 182, 212, 0.18);
-          color: var(--cyan, #06b6d4);
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.2);
+          color: #06b6d4;
           font-size: 10px;
           font-weight: 800;
           padding: 3px 8px;
@@ -765,7 +697,7 @@ export default function Register() {
         .security-body {
           font-size: 12.5px;
           line-height: 1.5;
-          color: var(--t2, #475569);
+          color: #9ca3af;
           margin: 0;
         }
 
@@ -774,46 +706,35 @@ export default function Register() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 24px 24px;
+          padding: 40px 24px;
           position: relative;
           z-index: 10;
-          background: #FFFFFF;
-          height: 100vh;
-          max-height: 100vh;
-          overflow-y: auto;
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-
-        .auth-right::-webkit-scrollbar {
-          display: none;
         }
 
         @media (min-width: 640px) {
           .auth-right {
-            padding: 40px 48px;
+            padding: 60px 48px;
           }
         }
 
         @media (min-width: 1024px) {
           .auth-right {
-            padding: 40px 60px;
-            background: #FFFFFF;
+            padding: 60px 80px;
+            background: #080c18;
           }
         }
 
         .auth-card-wrap {
           width: 100%;
           max-width: 420px;
-          margin: auto 0;
+          margin: 0 auto;
         }
 
         .mobile-logo-header {
           font-size: 24px;
           font-weight: 900;
-          margin-bottom: 16px;
+          margin-bottom: 32px;
           text-align: center;
-          color: var(--t1, #0F172A);
         }
 
         @media (min-width: 1024px) {
@@ -827,88 +748,94 @@ export default function Register() {
         }
 
         .form-header {
-          margin-bottom: 10px;
+          margin-bottom: 24px;
         }
 
         .form-title {
-          font-size: 20px;
+          font-size: 26px;
           font-weight: 800;
           margin: 0;
           letter-spacing: -0.5px;
-          color: var(--t1, #0F172A);
         }
 
         .form-subtitle {
-          font-size: 12.5px;
-          color: var(--t2, #475569);
-          margin: 2px 0 0 0;
+          font-size: 14px;
+          color: #9ca3af;
+          margin: 6px 0 0 0;
         }
 
         .error-banner {
+          background: rgba(239, 68, 68, 0.08);
+          border: 1px solid rgba(239, 68, 68, 0.15);
+          color: #fca5a5;
+          padding: 12px 16px;
+          border-radius: 12px;
           background: rgba(244, 63, 94, 0.06);
           border: 1px solid rgba(244, 63, 94, 0.15);
-          color: #E11D48;
+          color: var(--rose);
           padding: 10px 14px;
           border-radius: 10px;
           font-size: 13px;
           display: flex;
           gap: 10px;
-          align-items: center;
+          align-items: flex-start;
           margin-bottom: 16px;
+          box-sizing: border-box;
         }
 
+        /* Form Controls */
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 12px;
         }
 
         .input-group {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 4px;
         }
 
         .input-label {
-          font-size: 11px;
+          font-size: 12.5px;
           font-weight: 600;
-          color: var(--t2, #475569);
+          color: var(--t2);
         }
 
         .input-field-wrapper {
           display: flex;
           align-items: center;
           background: #FFFFFF;
-          border: 1px solid rgba(15, 23, 42, 0.09);
-          border-radius: 8px;
-          padding: 0 10px;
+          border: 1px solid rgba(15, 23, 42, 0.08);
+          border-radius: 10px;
+          padding: 0 14px;
           transition: all 0.25s ease;
           position: relative;
           box-sizing: border-box;
         }
 
         .input-field-wrapper:hover {
-          border-color: rgba(15, 23, 42, 0.18);
+          border-color: rgba(15, 23, 42, 0.15);
         }
 
         .input-field-wrapper.focused {
           background: #FFFFFF;
-          border-color: var(--violet, #6366F1);
-          box-shadow: 0 0 0 3px var(--violet-dim, rgba(99, 102, 241, 0.06));
+          border-color: var(--violet);
+          box-shadow: 0 0 0 3px var(--violet-dim);
         }
 
         .input-icon {
-          color: var(--t3, #64748B);
-          margin-right: 8px;
+          color: var(--t3);
+          margin-right: 10px;
         }
 
         .auth-input {
           flex: 1;
-          height: 36px;
+          height: 42px;
           background: none;
           border: none;
-          color: var(--t1, #0F172A);
-          font-size: 13px;
+          color: var(--t1);
+          font-size: 13.5px;
           outline: none;
           padding: 0;
           box-sizing: border-box;
@@ -916,24 +843,15 @@ export default function Register() {
         }
 
         .auth-input::placeholder {
-          color: var(--t4, #94A3B8);
-        }
-
-        /* Prevent autofill style breakage */
-        .auth-input:-webkit-autofill,
-        .auth-input:-webkit-autofill:hover,
-        .auth-input:-webkit-autofill:focus {
-          -webkit-text-fill-color: var(--t1, #0F172A);
-          -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
-          transition: background-color 5000s ease-in-out 0s;
+          color: var(--t4);
         }
 
         .password-toggle-btn {
           position: absolute;
-          right: 10px;
+          right: 14px;
           background: none;
           border: none;
-          color: var(--t3, #64748B);
+          color: #9ca3af;
           cursor: pointer;
           padding: 0;
           display: flex;
@@ -944,18 +862,18 @@ export default function Register() {
         .validation-container {
           display: flex;
           flex-direction: column;
-          gap: 2px;
-          margin-top: 1px;
-          background: rgba(15, 23, 42, 0.015);
-          padding: 6px 10px;
-          border-radius: 6px;
-          border: 1px solid rgba(15, 23, 42, 0.03);
+          gap: 6px;
+          margin-top: 4px;
+          background: rgba(255,255,255,0.015);
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.03);
         }
 
         .validation-item {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
         }
 
         .val-icon {
@@ -963,25 +881,25 @@ export default function Register() {
         }
 
         .val-icon.valid {
-          color: var(--emerald, #10b981);
+          color: #10b981;
         }
 
         .val-icon.invalid {
-          color: var(--rose, #F43F5E);
+          color: #ef4444;
           opacity: 0.6;
         }
 
         .val-text {
-          font-size: 11.5px;
+          font-size: 12px;
           transition: color 0.2s;
         }
 
         .val-text.valid {
-          color: var(--emerald, #10b981);
+          color: #10b981;
         }
 
         .val-text.invalid {
-          color: var(--t3, #64748B);
+          color: #9ca3af;
           opacity: 0.75;
         }
 
@@ -992,65 +910,65 @@ export default function Register() {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          padding: 16px 0;
+          padding: 24px 0;
         }
 
         .success-icon-wrap {
-          width: 64px;
-          height: 64px;
+          width: 80px;
+          height: 80px;
           border-radius: 50%;
           background: rgba(16, 185, 129, 0.1);
           border: 1px solid rgba(16, 185, 129, 0.25);
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 16px;
-          box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
+          margin-bottom: 24px;
+          box-shadow: 0 0 24px rgba(16, 185, 129, 0.15);
         }
 
         .success-title {
-          font-size: 22px;
+          font-size: 24px;
           font-weight: 800;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
         }
 
         .success-desc {
-          font-size: 13.5px;
-          color: var(--t2, #475569);
+          font-size: 14px;
+          color: #9ca3af;
           line-height: 1.6;
-          margin-bottom: 24px;
+          margin-bottom: 32px;
         }
 
         .highlight-email {
-          color: var(--t1, #0F172A);
+          color: #fff;
           font-weight: 700;
           text-decoration: underline;
-          text-decoration-color: var(--violet, #6366F1);
+          text-decoration-color: #7c3aed;
         }
 
         /* Submit Button */
         .submit-btn {
-          margin-top: 6px;
-          height: 38px;
+          margin-top: 10px;
+          height: 48px;
           width: 100%;
-          background: var(--grad-brand, linear-gradient(135deg, #6366F1 0%, #4F46E5 100%));
+          background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
           border: none;
-          border-radius: 8px;
+          border-radius: 12px;
           color: #fff;
-          font-size: 13.5px;
+          font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          box-shadow: var(--shadow-brand, 0 4px 20px rgba(99, 102, 241, 0.18));
+          box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
           transition: all 0.2s;
         }
 
         .submit-btn:disabled {
-          background: rgba(15, 23, 42, 0.04);
-          color: var(--t4, #94A3B8);
+          background: rgba(255,255,255,0.06);
+          color: #6b7280;
           cursor: not-allowed;
           box-shadow: none;
         }
@@ -1065,14 +983,13 @@ export default function Register() {
         }
 
         .form-footer {
-          margin-top: 16px;
+          margin-top: 24px;
           text-align: center;
-          font-size: 13px;
-          color: var(--t2, #475569);
+          font-size: 13.5px;
         }
 
         .auth-redirect-link {
-          color: var(--violet, #6366F1);
+          color: #a78bfa;
           font-weight: 600;
           text-decoration: none;
         }

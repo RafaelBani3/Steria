@@ -31,7 +31,7 @@ export const register = async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // 3. Create Active Account (isVerified: true by default, no email confirmation required)
+    // 3. Create Active Account (Default to verified, no email verification needed)
     const user = await prisma.user.create({
       data: {
         fullName,
@@ -45,7 +45,7 @@ export const register = async (req, res) => {
       }
     });
     
-    // 4. Generate JWT Token directly
+    // Generate JWT token directly for automatic login
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
     res.status(201).json({
@@ -53,7 +53,7 @@ export const register = async (req, res) => {
       token,
       user: {
         id: user.id,
-        name: user.fullName, // backward compatibility
+        name: user.fullName,
         fullName: user.fullName,
         email: user.email,
         username: user.username,
@@ -81,7 +81,8 @@ export const login = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return res.status(400).json({ error: 'Email tidak terdaftar.' });
     
-    // Check verification status
+    // Check verification status bypassed
+    /*
     if (!user.isVerified) {
       return res.status(403).json({ 
         error: 'Email belum diverifikasi', 
@@ -89,6 +90,7 @@ export const login = async (req, res) => {
         message: 'Silakan verifikasi email Anda terlebih dahulu.' 
       });
     }
+    */
     
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(400).json({ error: 'Kata sandi salah.' });
