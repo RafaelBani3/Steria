@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, CreditCard, PiggyBank, Wallet, TrendingUp, BarChart2,
   RefreshCw, X, AlertCircle, Check, Pencil, Trash2, ArrowUpRight,
-  ArrowDownLeft, ArrowLeftRight, Receipt
+  ArrowDownLeft, ArrowLeftRight, Receipt, Target
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAccountStore } from '../store/useAccountStore';
@@ -416,10 +416,10 @@ function AccountDetailsModal({ account, onClose }) {
       sign: '+'
     },
     SAVINGS_ALLOCATION_INTERNAL: {
-      label: 'Alokasi Internal (Savings)',
+      label: 'Dialokasikan ke Goal',
       color: 'var(--clr-emerald)',
       bg: 'rgba(16,185,129,0.12)',
-      icon: <PiggyBank size={16} />,
+      icon: <Target size={16} />,
       sign: ''
     },
     SAVINGS_TRANSFER_OUT: {

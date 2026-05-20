@@ -291,9 +291,9 @@ export const getAccountHistory = async (req, res) => {
           id: `sav-${tx.id}`,
           type: 'SAVINGS_ALLOCATION_INTERNAL',
           amount: tx.amount,
-          title: tx.savingsGoal ? `Alokasi Tabungan: ${tx.savingsGoal.goalName}` : 'Alokasi Tabungan',
+          title: tx.savingsGoal ? `Alokasi ke Goal: ${tx.savingsGoal.goalName}` : 'Alokasi Tabungan',
           date: tx.transactionDate,
-          details: 'Internal Goal Allocation'
+          details: 'Dimasukkan dari Saldo Tabungan'
         });
         return;
       }

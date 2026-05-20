@@ -206,12 +206,21 @@ export default function SavingsTracker() {
                 <button onClick={() => setShowTransferForm(false)} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}><X size={18} /></button>
               </div>
               <form onSubmit={handleTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {transferForm.savingsGoalId && String(transferForm.sourceAccountId) === String(transferForm.destinationSavingsAccountId) ? (
-                  <div style={{ padding: '16px', background: 'var(--bg-glass)', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '4px' }}>
-                    <p style={{ fontSize: '13px', color: 'var(--clr-text)', lineHeight: 1.5 }}>
-                      Alokasi dana ke goal <strong>{goals.find(g => String(g.id) === String(transferForm.savingsGoalId))?.goalName}</strong> menggunakan saldo dari tabungan <strong>{savingsAccounts.find(a => String(a.id) === String(transferForm.sourceAccountId))?.accountName}</strong>.
-                    </p>
-                  </div>
+                {transferForm.savingsGoalId ? (
+                  <>
+                    <div style={{ padding: '16px', background: 'var(--bg-glass)', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '4px' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--clr-text)', lineHeight: 1.5 }}>
+                        Alokasi dana ke goal <strong>{goals.find(g => String(g.id) === String(transferForm.savingsGoalId))?.goalName}</strong>
+                      </p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>From (Source Savings) *</label>
+                      <select className="input-dark" value={transferForm.sourceAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, sourceAccountId: e.target.value }))} required>
+                        <option value="">Pilih sumber tabungan...</option>
+                        {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                      </select>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div>
