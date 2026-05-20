@@ -103,7 +103,7 @@ export default function SavingsTracker() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <span className="badge badge-emerald" style={{ fontSize: 10 }}>{Math.round(pct)}%</span>
-                    <button onClick={() => { setTransferForm((f) => ({ ...f, savingsGoalId: goal.id, destinationSavingsAccountId: goal.savingsAccountId })); setShowTransferForm(true); }} style={{ padding: 5, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, cursor: 'pointer', color: 'var(--clr-emerald)', fontSize: 10, fontFamily: 'inherit', fontWeight: 600 }}>+Fund</button>
+                    <button onClick={() => { setTransferForm((f) => ({ ...f, savingsGoalId: goal.id, destinationSavingsAccountId: goal.savingsAccountId, sourceAccountId: goal.savingsAccountId })); setShowTransferForm(true); }} style={{ padding: 5, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, cursor: 'pointer', color: 'var(--clr-emerald)', fontSize: 10, fontFamily: 'inherit', fontWeight: 600 }}>+Fund</button>
                     <button onClick={() => handleDeleteGoal(goal)} style={{ padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8 }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}>
                       <Trash2 size={13} />
                     </button>
@@ -184,17 +184,22 @@ export default function SavingsTracker() {
             <motion.div className="modal-card" initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-text)' }}>Transfer to Savings</h2>
-                  <p style={{ fontSize: 12, color: 'var(--clr-text-3)', marginTop: 2 }}>Move money from cashflow to savings account</p>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-text)' }}>Fund Savings</h2>
+                  <p style={{ fontSize: 12, color: 'var(--clr-text-3)', marginTop: 2 }}>Transfer from cashflow or allocate from existing savings</p>
                 </div>
                 <button onClick={() => setShowTransferForm(false)} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}><X size={18} /></button>
               </div>
               <form onSubmit={handleTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>From (Cashflow) *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>From (Source Account) *</label>
                   <select className="input-dark" value={transferForm.sourceAccountId} onChange={(e) => setTransferForm((f) => ({ ...f, sourceAccountId: e.target.value }))} required>
                     <option value="">Select source account...</option>
-                    {cashflowAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                    <optgroup label="Savings Accounts (Allocate existing balance)">
+                      {savingsAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💰'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                    </optgroup>
+                    <optgroup label="Cashflow Accounts (Transfer new money)">
+                      {cashflowAccounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} — Rp {acc.currentBalance?.toLocaleString('id-ID')}</option>)}
+                    </optgroup>
                   </select>
                 </div>
                 <div>

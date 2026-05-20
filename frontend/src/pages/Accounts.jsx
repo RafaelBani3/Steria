@@ -414,6 +414,27 @@ function AccountDetailsModal({ account, onClose }) {
       bg: 'rgba(6,182,212,0.12)',
       icon: <ArrowDownLeft size={16} />,
       sign: '+'
+    },
+    SAVINGS_ALLOCATION_INTERNAL: {
+      label: 'Alokasi Internal (Savings)',
+      color: 'var(--clr-emerald)',
+      bg: 'rgba(16,185,129,0.12)',
+      icon: <PiggyBank size={16} />,
+      sign: ''
+    },
+    SAVINGS_TRANSFER_OUT: {
+      label: 'Transfer Keluar (Savings)',
+      color: 'var(--clr-amber)',
+      bg: 'rgba(245,158,11,0.12)',
+      icon: <ArrowUpRight size={16} />,
+      sign: '-'
+    },
+    SAVINGS_TRANSFER_IN: {
+      label: 'Terima Transfer (Savings)',
+      color: 'var(--clr-cyan)',
+      bg: 'rgba(6,182,212,0.12)',
+      icon: <ArrowDownLeft size={16} />,
+      sign: '+'
     }
   };
 

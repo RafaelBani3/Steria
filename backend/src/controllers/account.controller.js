@@ -182,7 +182,7 @@ export const getAccountHistory = async (req, res) => {
     });
     if (!account) return res.status(404).json({ error: 'Account not found' });
 
-    const [incomes, expenses, budgetItems] = await Promise.all([
+    const [incomes, expenses, budgetItems, savingsTransactions] = await Promise.all([
       // 1. Incomes
       prisma.income.findMany({
         where: { accountId, userId: req.user.userId },
@@ -208,6 +208,22 @@ export const getAccountHistory = async (req, res) => {
           account: { select: { accountName: true, providerName: true } }
         },
         orderBy: { createdAt: 'desc' },
+      }),
+      // 4. Savings Transactions
+      prisma.savingsTransaction.findMany({
+        where: {
+          userId: req.user.userId,
+          OR: [
+            { sourceAccountId: accountId },
+            { destinationSavingsAccountId: accountId }
+          ]
+        },
+        include: {
+          savingsGoal: { select: { goalName: true } },
+          sourceAccount: { select: { accountName: true } },
+          destinationAccount: { select: { accountName: true } }
+        },
+        orderBy: { transactionDate: 'desc' },
       })
     ]);
 
@@ -263,6 +279,42 @@ export const getAccountHistory = async (req, res) => {
           title: `Terima Alokasi: ${item.itemName}`,
           date: item.createdAt,
           details: `Dari ${item.sourceAccount?.accountName || 'Sumber'}`,
+        });
+      }
+    });
+
+    // Savings Transactions
+    savingsTransactions.forEach((tx) => {
+      if (tx.sourceAccountId === accountId && tx.destinationSavingsAccountId === accountId) {
+        // Internal allocation to a goal
+        feed.push({
+          id: `sav-${tx.id}`,
+          type: 'SAVINGS_ALLOCATION_INTERNAL',
+          amount: tx.amount,
+          title: tx.savingsGoal ? `Alokasi Tabungan: ${tx.savingsGoal.goalName}` : 'Alokasi Tabungan',
+          date: tx.transactionDate,
+          details: 'Internal Goal Allocation'
+        });
+        return;
+      }
+      if (tx.sourceAccountId === accountId) {
+        feed.push({
+          id: `sav-out-${tx.id}`,
+          type: 'SAVINGS_TRANSFER_OUT',
+          amount: tx.amount,
+          title: 'Transfer ke Tabungan',
+          date: tx.transactionDate,
+          details: `Ke ${tx.destinationAccount?.accountName || 'Tujuan'}` + (tx.savingsGoal ? ` (${tx.savingsGoal.goalName})` : '')
+        });
+      }
+      if (tx.destinationSavingsAccountId === accountId) {
+        feed.push({
+          id: `sav-in-${tx.id}`,
+          type: 'SAVINGS_TRANSFER_IN',
+          amount: tx.amount,
+          title: 'Terima dari Transfer',
+          date: tx.transactionDate,
+          details: `Dari ${tx.sourceAccount?.accountName || 'Sumber'}` + (tx.savingsGoal ? ` (${tx.savingsGoal.goalName})` : '')
         });
       }
     });
