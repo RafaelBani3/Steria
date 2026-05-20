@@ -227,6 +227,7 @@ export default function BudgetManagement() {
     return saved ? JSON.parse(saved) : { needs: 50, wants: 30, savings: 20 };
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activePreset = ALLOCATION_PRESETS.find(p => p.id === selectedPreset) || ALLOCATION_PRESETS[0];
   const allocationRule = selectedPreset === 'custom'
@@ -291,6 +292,7 @@ export default function BudgetManagement() {
       }
     }
 
+    setIsSubmitting(true);
     try {
       await createBudgetItem({
         categoryId: targetCategory.id,
@@ -307,6 +309,8 @@ export default function BudgetManagement() {
     } catch (err) {
       const serverMsg = err.response?.data?.error;
       toast.error(serverMsg || 'Failed to create budget item');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -338,6 +342,7 @@ export default function BudgetManagement() {
       }
     }
 
+    setIsSubmitting(true);
     try {
       await updateBudgetItem(editingItem.id, {
         itemName: form.itemName,
@@ -354,6 +359,8 @@ export default function BudgetManagement() {
     } catch (err) {
       const serverMsg = err.response?.data?.error;
       toast.error(serverMsg || 'Failed to update budget item');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -865,11 +872,16 @@ export default function BudgetManagement() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" onClick={() => setShowAddItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
+                  <button type="button" onClick={() => setShowAddItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
-                    <Plus size={16} /> Create Item
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    style={{ flex: 2, justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Creating...' : <><Plus size={16} /> Create Item</>}
                   </button>
                 </div>
               </form>
@@ -1040,11 +1052,16 @@ export default function BudgetManagement() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" onClick={() => setShowEditItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
+                  <button type="button" onClick={() => setShowEditItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
-                    <Plus size={16} /> Save Changes
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    style={{ flex: 2, justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : <><Plus size={16} /> Save Changes</>}
                   </button>
                 </div>
               </form>
