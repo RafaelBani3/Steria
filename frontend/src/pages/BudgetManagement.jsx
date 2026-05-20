@@ -58,23 +58,10 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
             {isWarning && <span className="badge badge-amber" style={{ fontSize: 9 }}>80%</span>}
           </div>
           
-          {(item.sourceAccount || item.account) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--clr-text-3)' }}>
-              {item.sourceAccount && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>{item.sourceAccount.icon || '💳'}</span>
-                  <span style={{ fontWeight: 500 }}>{item.sourceAccount.providerName}</span>
-                </span>
-              )}
-              {item.sourceAccount && item.account && (
-                <span style={{ opacity: 0.4 }}>→</span>
-              )}
-              {item.account && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>{item.account.icon || '💳'}</span>
-                  <span style={{ fontWeight: 500 }}>{item.account.providerName}</span>
-                </span>
-              )}
+          {item.account && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--clr-text-3)' }}>
+              <span>{item.account.icon || '💳'}</span>
+              <span style={{ fontWeight: 500 }}>{item.account.providerName}</span>
             </div>
           )}
         </div>
@@ -205,11 +192,11 @@ const CategorySection = memo(function CategorySection({ category, items, totalIn
                 </button>
               </div>
             ) : (
-              <AnimatePresence>
+              <div>
                 {items.map((item) => (
                   <BudgetItemRow key={item.id} item={item} onEdit={onEditItem} onDelete={onDeleteItem} />
                 ))}
-              </AnimatePresence>
+              </div>
             )}
           </motion.div>
         )}
