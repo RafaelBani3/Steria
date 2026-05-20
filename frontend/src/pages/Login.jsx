@@ -41,11 +41,7 @@ export default function Login() {
   const [focused, setFocused] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
   
-  // Custom states for verification warnings
-  const [notVerified, setNotVerified] = useState(false);
-  const [resending, setResending] = useState(false);
-
-  const { login, resendVerification, isLoading, error } = useAuthStore();
+  const { login, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
 
   // Carousel timer
@@ -58,31 +54,11 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setNotVerified(false);
     
     const success = await login(email, password);
     if (success) {
       toast.success('Selamat datang kembali di Steria! ✨');
       navigate('/dashboard');
-    } else {
-      // Check if user is not verified
-      const storeError = useAuthStore.getState().error;
-      if (storeError && storeError.includes('belum diverifikasi')) {
-        setNotVerified(true);
-      }
-    }
-  };
-
-  const handleResend = async () => {
-    if (!email) return;
-    setResending(true);
-    const result = await resendVerification(email);
-    setResending(false);
-    if (result.success) {
-      toast.success('Email verifikasi baru telah dikirim! Silakan periksa kotak masuk Anda ✨');
-      setNotVerified(false);
-    } else {
-      toast.error(result.error || 'Gagal mengirim ulang email verifikasi.');
     }
   };
 
@@ -263,7 +239,7 @@ export default function Login() {
 
             {/* Error Handlers (Soft & clean UI) */}
             <AnimatePresence>
-              {error && !notVerified && (
+              {error && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -272,35 +248,6 @@ export default function Login() {
                 >
                   <AlertCircle size={16} />
                   <span>{error}</span>
-                </motion.div>
-              )}
-
-              {notVerified && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="error-banner verification-warning"
-                >
-                  <AlertCircle size={16} color="#f59e0b" />
-                  <div className="warning-content">
-                    <p style={{ fontWeight: 600, margin: 0 }}>Email belum diverifikasi.</p>
-                    <p style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px', marginBottom: '8px' }}>
-                      Silakan verifikasi email Anda untuk dapat masuk ke dashboard.
-                    </p>
-                    <button 
-                      type="button" 
-                      onClick={handleResend}
-                      disabled={resending}
-                      className="resend-inline-btn"
-                    >
-                      {resending ? (
-                        <>Mengirim... <Loader2 size={12} className="animate-spin" /></>
-                      ) : (
-                        <>Kirim ulang email verifikasi <RefreshCw size={12} /></>
-                      )}
-                    </button>
-                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
