@@ -470,7 +470,8 @@ export default function Register() {
       <style>{`
         /* Reuse baseline layouts from login page styled globally */
         .auth-container {
-          min-height: 100vh;
+          height: 100vh;
+          max-height: 100vh;
           display: grid;
           grid-template-columns: 1fr;
           background-color: var(--bg, #EEF2F6);
@@ -490,11 +491,13 @@ export default function Register() {
           display: none;
           flex-direction: column;
           justify-content: space-between;
-          padding: 60px 80px;
+          padding: 40px 60px;
           background: radial-gradient(circle at 10% 10%, #F1F5F9 0%, #EEF2F6 100%);
           border-right: 1px solid rgba(15, 23, 42, 0.06);
           position: relative;
           overflow: hidden;
+          height: 100vh;
+          max-height: 100vh;
         }
 
         @media (min-width: 1024px) {
@@ -568,7 +571,7 @@ export default function Register() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          margin-top: 40px;
+          margin-top: 20px;
         }
 
         .carousel-slide {
@@ -579,7 +582,7 @@ export default function Register() {
         }
 
         .badge-wrapper {
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
 
         .slide-badge {
@@ -595,7 +598,7 @@ export default function Register() {
         }
 
         .slide-title {
-          font-size: 40px;
+          font-size: 36px;
           font-weight: 850;
           margin: 0;
           letter-spacing: -1px;
@@ -606,26 +609,26 @@ export default function Register() {
         }
 
         .slide-tagline {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
           color: var(--violet, #6366F1);
-          margin: 8px 0 16px;
+          margin: 6px 0 12px;
           letter-spacing: 1px;
           text-transform: uppercase;
         }
 
         .slide-desc {
-          font-size: 15px;
+          font-size: 14px;
           line-height: 1.6;
           color: var(--t2, #475569);
           max-width: 440px;
-          margin: 0 0 40px 0;
+          margin: 0 0 24px 0;
         }
 
         .carousel-indicators {
           display: flex;
           gap: 8px;
-          margin-top: 32px;
+          margin-top: 24px;
         }
 
         .indicator-dot {
@@ -646,7 +649,7 @@ export default function Register() {
 
         .illustration-container {
           width: 100%;
-          min-height: 240px;
+          min-height: 200px;
           display: flex;
           align-items: center;
           justify-content: flex-start;
@@ -659,7 +662,7 @@ export default function Register() {
           -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(15, 23, 42, 0.06);
           border-radius: 16px;
-          padding: 24px;
+          padding: 20px;
           box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
         }
 
@@ -771,21 +774,30 @@ export default function Register() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 40px 24px;
+          padding: 24px 24px;
           position: relative;
           z-index: 10;
           background: #FFFFFF;
+          height: 100vh;
+          max-height: 100vh;
+          overflow-y: auto;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .auth-right::-webkit-scrollbar {
+          display: none;
         }
 
         @media (min-width: 640px) {
           .auth-right {
-            padding: 60px 48px;
+            padding: 40px 48px;
           }
         }
 
         @media (min-width: 1024px) {
           .auth-right {
-            padding: 60px 80px;
+            padding: 40px 60px;
             background: #FFFFFF;
           }
         }
@@ -793,13 +805,13 @@ export default function Register() {
         .auth-card-wrap {
           width: 100%;
           max-width: 420px;
-          margin: 0 auto;
+          margin: auto 0;
         }
 
         .mobile-logo-header {
           font-size: 24px;
           font-weight: 900;
-          margin-bottom: 32px;
+          margin-bottom: 16px;
           text-align: center;
           color: var(--t1, #0F172A);
         }
@@ -815,11 +827,11 @@ export default function Register() {
         }
 
         .form-header {
-          margin-bottom: 24px;
+          margin-bottom: 16px;
         }
 
         .form-title {
-          font-size: 26px;
+          font-size: 24px;
           font-weight: 800;
           margin: 0;
           letter-spacing: -0.5px;
@@ -827,38 +839,38 @@ export default function Register() {
         }
 
         .form-subtitle {
-          font-size: 14px;
+          font-size: 13.5px;
           color: var(--t2, #475569);
-          margin: 6px 0 0 0;
+          margin: 4px 0 0 0;
         }
 
         .error-banner {
           background: rgba(244, 63, 94, 0.06);
           border: 1px solid rgba(244, 63, 94, 0.15);
           color: #E11D48;
-          padding: 12px 16px;
-          border-radius: 12px;
-          font-size: 13.5px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 13px;
           display: flex;
           gap: 10px;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
         }
 
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
         }
 
         .input-group {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
         }
 
         .input-label {
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 600;
           color: var(--t2, #475569);
         }
@@ -868,8 +880,8 @@ export default function Register() {
           align-items: center;
           background: #FFFFFF;
           border: 1px solid rgba(15, 23, 42, 0.09);
-          border-radius: 12px;
-          padding: 0 16px;
+          border-radius: 10px;
+          padding: 0 14px;
           transition: all 0.25s ease;
           position: relative;
           box-sizing: border-box;
@@ -887,16 +899,16 @@ export default function Register() {
 
         .input-icon {
           color: var(--t3, #64748B);
-          margin-right: 12px;
+          margin-right: 10px;
         }
 
         .auth-input {
           flex: 1;
-          height: 46px;
+          height: 42px;
           background: none;
           border: none;
           color: var(--t1, #0F172A);
-          font-size: 14.5px;
+          font-size: 14px;
           outline: none;
           padding: 0;
           box-sizing: border-box;
@@ -932,10 +944,10 @@ export default function Register() {
         .validation-container {
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          margin-top: 4px;
+          gap: 4px;
+          margin-top: 2px;
           background: rgba(15, 23, 42, 0.015);
-          padding: 10px 14px;
+          padding: 8px 12px;
           border-radius: 8px;
           border: 1px solid rgba(15, 23, 42, 0.03);
         }
@@ -943,7 +955,7 @@ export default function Register() {
         .validation-item {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
 
         .val-icon {
@@ -960,7 +972,7 @@ export default function Register() {
         }
 
         .val-text {
-          font-size: 12px;
+          font-size: 11.5px;
           transition: color 0.2s;
         }
 
@@ -980,33 +992,33 @@ export default function Register() {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          padding: 24px 0;
+          padding: 16px 0;
         }
 
         .success-icon-wrap {
-          width: 80px;
-          height: 80px;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
           background: rgba(16, 185, 129, 0.1);
           border: 1px solid rgba(16, 185, 129, 0.25);
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 24px;
-          box-shadow: 0 0 24px rgba(16, 185, 129, 0.15);
+          margin-bottom: 16px;
+          box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
         }
 
         .success-title {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 800;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
         }
 
         .success-desc {
-          font-size: 14px;
+          font-size: 13.5px;
           color: var(--t2, #475569);
           line-height: 1.6;
-          margin-bottom: 32px;
+          margin-bottom: 24px;
         }
 
         .highlight-email {
@@ -1018,14 +1030,14 @@ export default function Register() {
 
         /* Submit Button */
         .submit-btn {
-          margin-top: 10px;
-          height: 48px;
+          margin-top: 6px;
+          height: 44px;
           width: 100%;
           background: var(--grad-brand, linear-gradient(135deg, #6366F1 0%, #4F46E5 100%));
           border: none;
-          border-radius: 12px;
+          border-radius: 10px;
           color: #fff;
-          font-size: 15px;
+          font-size: 14.5px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
@@ -1053,9 +1065,9 @@ export default function Register() {
         }
 
         .form-footer {
-          margin-top: 24px;
+          margin-top: 16px;
           text-align: center;
-          font-size: 13.5px;
+          font-size: 13px;
           color: var(--t2, #475569);
         }
 

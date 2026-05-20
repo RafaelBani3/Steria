@@ -411,7 +411,8 @@ export default function Login() {
       <style>{`
         /* Container and base grids */
         .auth-container {
-          min-height: 100vh;
+          height: 100vh;
+          max-height: 100vh;
           display: grid;
           grid-template-columns: 1fr;
           background-color: var(--bg, #EEF2F6);
@@ -432,11 +433,13 @@ export default function Login() {
           display: none;
           flex-direction: column;
           justify-content: space-between;
-          padding: 60px 80px;
+          padding: 40px 60px;
           background: radial-gradient(circle at 10% 10%, #F1F5F9 0%, #EEF2F6 100%);
           border-right: 1px solid rgba(15, 23, 42, 0.06);
           position: relative;
           overflow: hidden;
+          height: 100vh;
+          max-height: 100vh;
         }
 
         @media (min-width: 1024px) {
@@ -513,7 +516,7 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          margin-top: 40px;
+          margin-top: 20px;
         }
 
         .carousel-slide {
@@ -524,7 +527,7 @@ export default function Login() {
         }
 
         .badge-wrapper {
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
 
         .slide-badge {
@@ -540,7 +543,7 @@ export default function Login() {
         }
 
         .slide-title {
-          font-size: 40px;
+          font-size: 36px;
           font-weight: 850;
           margin: 0;
           letter-spacing: -1px;
@@ -551,26 +554,26 @@ export default function Login() {
         }
 
         .slide-tagline {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
           color: var(--violet, #6366F1);
-          margin: 8px 0 16px;
+          margin: 6px 0 12px;
           letter-spacing: 1px;
           text-transform: uppercase;
         }
 
         .slide-desc {
-          font-size: 15px;
+          font-size: 14px;
           line-height: 1.6;
           color: var(--t2, #475569);
           max-width: 440px;
-          margin: 0 0 40px 0;
+          margin: 0 0 24px 0;
         }
 
         .carousel-indicators {
           display: flex;
           gap: 8px;
-          margin-top: 32px;
+          margin-top: 24px;
         }
 
         .indicator-dot {
@@ -592,7 +595,7 @@ export default function Login() {
         /* Widgets and Illustrations */
         .illustration-container {
           width: 100%;
-          min-height: 240px;
+          min-height: 200px;
           display: flex;
           align-items: center;
           justify-content: flex-start;
@@ -818,21 +821,30 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 40px 24px;
+          padding: 24px 24px;
           position: relative;
           z-index: 10;
           background: #FFFFFF;
+          height: 100vh;
+          max-height: 100vh;
+          overflow-y: auto;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
+        .auth-right::-webkit-scrollbar {
+          display: none;
         }
 
         @media (min-width: 640px) {
           .auth-right {
-            padding: 60px 48px;
+            padding: 40px 48px;
           }
         }
 
         @media (min-width: 1024px) {
           .auth-right {
-            padding: 80px;
+            padding: 40px 60px;
             background: #FFFFFF;
           }
         }
@@ -840,13 +852,13 @@ export default function Login() {
         .auth-card-wrap {
           width: 100%;
           max-width: 420px;
-          margin: 0 auto;
+          margin: auto 0;
         }
 
         .mobile-logo-header {
           font-size: 24px;
           font-weight: 900;
-          margin-bottom: 32px;
+          margin-bottom: 16px;
           text-align: center;
           color: var(--t1, #0F172A);
         }
@@ -862,11 +874,11 @@ export default function Login() {
         }
 
         .form-header {
-          margin-bottom: 28px;
+          margin-bottom: 16px;
         }
 
         .form-title {
-          font-size: 26px;
+          font-size: 24px;
           font-weight: 800;
           margin: 0;
           letter-spacing: -0.5px;
@@ -874,9 +886,9 @@ export default function Login() {
         }
 
         .form-subtitle {
-          font-size: 14px;
+          font-size: 13.5px;
           color: var(--t2, #475569);
-          margin: 6px 0 0 0;
+          margin: 4px 0 0 0;
         }
 
         /* Error/Warning Banners */
@@ -884,13 +896,13 @@ export default function Login() {
           background: rgba(244, 63, 94, 0.06);
           border: 1px solid rgba(244, 63, 94, 0.15);
           color: #E11D48;
-          padding: 12px 16px;
-          border-radius: 12px;
-          font-size: 13.5px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-size: 13px;
           display: flex;
           gap: 10px;
           align-items: flex-start;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           box-sizing: border-box;
         }
 
@@ -927,17 +939,17 @@ export default function Login() {
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 12px;
         }
 
         .input-group {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
         }
 
         .input-label {
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 600;
           color: var(--t2, #475569);
         }
@@ -947,8 +959,8 @@ export default function Login() {
           align-items: center;
           background: #FFFFFF;
           border: 1px solid rgba(15, 23, 42, 0.09);
-          border-radius: 12px;
-          padding: 0 16px;
+          border-radius: 10px;
+          padding: 0 14px;
           transition: all 0.25s ease;
           position: relative;
           box-sizing: border-box;
@@ -966,16 +978,16 @@ export default function Login() {
 
         .input-icon {
           color: var(--t3, #64748B);
-          margin-right: 12px;
+          margin-right: 10px;
         }
 
         .auth-input {
           flex: 1;
-          height: 48px;
+          height: 42px;
           background: none;
           border: none;
           color: var(--t1, #0F172A);
-          font-size: 14.5px;
+          font-size: 14px;
           outline: none;
           padding: 0;
           box-sizing: border-box;
@@ -1063,14 +1075,14 @@ export default function Login() {
 
         /* Submit Button */
         .submit-btn {
-          margin-top: 10px;
-          height: 50px;
+          margin-top: 6px;
+          height: 44px;
           width: 100%;
           background: var(--grad-brand, linear-gradient(135deg, #6366F1 0%, #4F46E5 100%));
           border: none;
-          border-radius: 12px;
+          border-radius: 10px;
           color: #fff;
-          font-size: 15px;
+          font-size: 14.5px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
@@ -1098,9 +1110,9 @@ export default function Login() {
         }
 
         .form-footer {
-          margin-top: 24px;
+          margin-top: 16px;
           text-align: center;
-          font-size: 13.5px;
+          font-size: 13px;
           color: var(--t2, #475569);
         }
 
