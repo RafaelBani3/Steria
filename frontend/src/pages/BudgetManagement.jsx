@@ -504,31 +504,31 @@ export default function BudgetManagement() {
         className="glass"
         style={{ padding: '16px 18px', borderRadius: 18, marginBottom: 20 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Sliders size={15} style={{ color: 'var(--clr-violet)' }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-text)' }}>Aturan Alokasi Dana</span>
-        </div>
-
-        {/* Preset Buttons */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: selectedPreset === 'custom' ? 14 : 0 }}>
-          {ALLOCATION_PRESETS.map(preset => (
-            <button
-              key={preset.id}
-              onClick={() => setSelectedPreset(preset.id)}
-              style={{
-                padding: '8px 14px', borderRadius: 12, cursor: 'pointer',
-                fontFamily: 'inherit', fontWeight: 700, fontSize: 12,
-                border: `1.5px solid ${selectedPreset === preset.id ? preset.color : 'var(--glass-border)'}`,
-                background: selectedPreset === preset.id ? `${preset.color}18` : 'var(--bg-elevated)',
-                color: selectedPreset === preset.id ? preset.color : 'var(--clr-text-3)',
-                transition: 'all 200ms ease',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-              }}
-            >
-              <span>{preset.label}</span>
-              <span style={{ fontSize: 9, fontWeight: 600, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{preset.desc}</span>
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: selectedPreset === 'custom' ? 14 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sliders size={15} style={{ color: 'var(--clr-violet)' }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-text)' }}>Aturan Alokasi Dana</span>
+          </div>
+          <select
+            value={selectedPreset}
+            onChange={(e) => setSelectedPreset(e.target.value)}
+            className="input-dark"
+            style={{
+              width: 'auto',
+              padding: '6px 28px 6px 12px',
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: 12,
+              cursor: 'pointer',
+              color: 'var(--clr-text)',
+            }}
+          >
+            {ALLOCATION_PRESETS.map(preset => (
+              <option key={preset.id} value={preset.id} style={{ background: 'var(--bg-elevated)', color: 'var(--clr-text)' }}>
+                {preset.label} ({preset.desc})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Custom Inputs */}
