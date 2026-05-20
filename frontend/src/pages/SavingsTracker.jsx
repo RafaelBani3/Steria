@@ -95,7 +95,6 @@ export default function SavingsTracker() {
           {goals.map((goal, i) => {
             const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
             return (
-            return (
               <motion.div key={goal.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="glass" style={{ padding: '24px', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: pct >= 100 ? 'var(--clr-emerald)' : 'var(--clr-cyan)' }} />
                 
