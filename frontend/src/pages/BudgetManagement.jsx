@@ -34,90 +34,87 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      whileHover={{ y: -1, transition: { duration: 0.2 } }}
+      exit={{ opacity: 0, scale: 0.95 }}
       className="glass"
       style={{
+        position: 'relative',
         padding: '16px 18px',
         borderRadius: 16,
-        marginBottom: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        transition: 'border-color 0.2s, box-shadow 0.2s',
+        marginBottom: 12,
+        overflow: 'hidden',
+        borderLeft: `4px solid ${item.color || '#7C3AED'}`,
       }}
     >
-      {/* Top Row: Color Tag, Title, Status Badges, and Action Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: item.color || '#7C3AED',
-              boxShadow: `0 0 8px ${item.color || '#7C3AED'}80`,
-              flexShrink: 0,
-            }}
-          />
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {item.itemName}
-          </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+        {/* Left: Info */}
+        <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <h4 style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.2px' }}>
+              {item.itemName}
+            </h4>
+            {isOver && <span className="badge badge-rose" style={{ fontSize: 9 }}>OVER</span>}
+            {isWarning && <span className="badge badge-amber" style={{ fontSize: 9 }}>80%</span>}
+          </div>
           
-          {isOver && <span className="badge badge-rose" style={{ fontSize: 9, flexShrink: 0 }}>OVER</span>}
-          {isWarning && <span className="badge badge-amber" style={{ fontSize: 9, flexShrink: 0 }}>80%</span>}
+          {(item.sourceAccount || item.account) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--clr-text-3)' }}>
+              {item.sourceAccount && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>{item.sourceAccount.icon || '💳'}</span>
+                  <span style={{ fontWeight: 500 }}>{item.sourceAccount.providerName}</span>
+                </span>
+              )}
+              {item.sourceAccount && item.account && (
+                <span style={{ opacity: 0.4 }}>→</span>
+              )}
+              {item.account && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>{item.account.icon || '💳'}</span>
+                  <span style={{ fontWeight: 500 }}>{item.account.providerName}</span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {/* Right: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
             onClick={() => onEdit(item)}
-            style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-violet)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+            className="btn-ghost"
+            style={{ padding: 6, borderRadius: 8, height: 'auto', border: 'none', color: 'var(--clr-text-3)' }}
           >
-            <Edit3 size={13} />
+            <Edit3 size={15} />
           </button>
-
           <button
             onClick={() => onDelete(item.id)}
-            style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+            className="btn-ghost"
+            style={{ padding: 6, borderRadius: 8, height: 'auto', border: 'none', color: 'var(--clr-rose)' }}
           >
-            <Trash2 size={13} />
+            <Trash2 size={15} />
           </button>
         </div>
       </div>
 
-      {/* Middle Row: Source and Target Account Flow */}
-      {(item.sourceAccount || item.account) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingLeft: 20 }}>
-          {item.sourceAccount && (
-            <span className="badge badge-neutral" style={{ fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ opacity: 0.6, fontSize: 9, textTransform: 'uppercase', fontWeight: 700 }}>From</span>
-              <span>{item.sourceAccount.icon || '💳'} {item.sourceAccount.providerName}</span>
-            </span>
-          )}
-          
-          {item.sourceAccount && item.account && (
-            <span style={{ opacity: 0.5, color: 'var(--clr-text-3)', fontSize: 11, display: 'flex', alignItems: 'center' }}>→</span>
-          )}
-          
-          {item.account && (
-            <span className="badge badge-cyan" style={{ fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ opacity: 0.6, fontSize: 9, textTransform: 'uppercase', fontWeight: 700 }}>To</span>
-              <span>{item.account.icon || '💳'} {item.account.providerName}</span>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Progress Bar */}
+      {/* Progress & Amounts */}
       <div>
-        <div className="progress-bar" style={{ height: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: isOver ? 'var(--clr-rose)' : 'var(--clr-text)' }}>
+              {formatRp(item.usedAmount)}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--clr-text-3)', fontWeight: 600 }}>
+              / {formatRp(item.allocatedAmount)}
+            </span>
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: isOver ? 'var(--clr-rose)' : 'var(--clr-emerald)' }}>
+            {isOver ? `Over ${formatRp(item.usedAmount - item.allocatedAmount)}` : `${Math.round(usagePct)}%`}
+          </span>
+        </div>
+        
+        <div className="progress-bar" style={{ height: 6, background: 'rgba(15,23,42,0.06)' }}>
           <motion.div
             className="progress-fill"
             initial={{ width: 0 }}
@@ -126,19 +123,6 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
             style={{ background: barColor }}
           />
         </div>
-      </div>
-
-      {/* Bottom Row: Spent, Budget, and Usage Percentage */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
-        <span style={{ color: 'var(--clr-text-3)' }}>
-          Spent: <span style={{ color: isOver ? 'var(--clr-rose)' : 'var(--clr-text-2)', fontWeight: 600 }}>{formatRp(item.usedAmount)}</span>
-        </span>
-        <span style={{ color: 'var(--clr-text-3)' }}>
-          Budget: <span style={{ color: 'var(--clr-text-2)', fontWeight: 600 }}>{formatRp(item.allocatedAmount)}</span>
-        </span>
-        <span style={{ color: isOver ? 'var(--clr-rose)' : 'var(--clr-emerald)', fontWeight: 600 }}>
-          {isOver ? `Over ${formatRp(item.usedAmount - item.allocatedAmount)}` : `${Math.round(usagePct)}% used`}
-        </span>
       </div>
     </motion.div>
   );
