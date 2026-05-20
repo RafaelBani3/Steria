@@ -874,11 +874,11 @@ export default function Login() {
         }
 
         .form-header {
-          margin-bottom: 16px;
+          margin-bottom: 10px;
         }
 
         .form-title {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 800;
           margin: 0;
           letter-spacing: -0.5px;
@@ -886,9 +886,9 @@ export default function Login() {
         }
 
         .form-subtitle {
-          font-size: 13.5px;
+          font-size: 12.5px;
           color: var(--t2, #475569);
-          margin: 4px 0 0 0;
+          margin: 2px 0 0 0;
         }
 
         /* Error/Warning Banners */
@@ -939,17 +939,17 @@ export default function Login() {
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
         }
 
         .input-group {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 2px;
         }
 
         .input-label {
-          font-size: 12.5px;
+          font-size: 11px;
           font-weight: 600;
           color: var(--t2, #475569);
         }
@@ -959,8 +959,8 @@ export default function Login() {
           align-items: center;
           background: #FFFFFF;
           border: 1px solid rgba(15, 23, 42, 0.09);
-          border-radius: 10px;
-          padding: 0 14px;
+          border-radius: 8px;
+          padding: 0 10px;
           transition: all 0.25s ease;
           position: relative;
           box-sizing: border-box;
@@ -978,16 +978,16 @@ export default function Login() {
 
         .input-icon {
           color: var(--t3, #64748B);
-          margin-right: 10px;
+          margin-right: 8px;
         }
 
         .auth-input {
           flex: 1;
-          height: 42px;
+          height: 36px;
           background: none;
           border: none;
           color: var(--t1, #0F172A);
-          font-size: 14px;
+          font-size: 13px;
           outline: none;
           padding: 0;
           box-sizing: border-box;
@@ -1009,7 +1009,7 @@ export default function Login() {
 
         .password-toggle-btn {
           position: absolute;
-          right: 14px;
+          right: 10px;
           background: none;
           border: none;
           color: var(--t3, #64748B);
@@ -1076,13 +1076,13 @@ export default function Login() {
         /* Submit Button */
         .submit-btn {
           margin-top: 6px;
-          height: 44px;
+          height: 38px;
           width: 100%;
           background: var(--grad-brand, linear-gradient(135deg, #6366F1 0%, #4F46E5 100%));
           border: none;
-          border-radius: 10px;
+          border-radius: 8px;
           color: #fff;
-          font-size: 14.5px;
+          font-size: 13.5px;
           font-weight: 600;
           cursor: pointer;
           display: flex;
