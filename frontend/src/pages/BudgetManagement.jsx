@@ -38,59 +38,86 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
+      whileHover={{ y: -1, transition: { duration: 0.2 } }}
       className="glass"
-      style={{ padding: '14px 16px', borderRadius: 14, marginBottom: 8 }}
+      style={{
+        padding: '16px 18px',
+        borderRadius: 16,
+        marginBottom: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <div
-          style={{
-            width: 10, height: 10, borderRadius: '50%',
-            background: item.color || '#7C3AED',
-            boxShadow: `0 0 8px ${item.color || '#7C3AED'}80`,
-            flexShrink: 0,
-          }}
-        />
-        <p style={{ flex: 1, fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>{item.itemName}</p>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      {/* Top Row: Color Tag, Title, Status Badges, and Action Buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: item.color || '#7C3AED',
+              boxShadow: `0 0 8px ${item.color || '#7C3AED'}80`,
+              flexShrink: 0,
+            }}
+          />
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {item.itemName}
+          </p>
+          
+          {isOver && <span className="badge badge-rose" style={{ fontSize: 9, flexShrink: 0 }}>OVER</span>}
+          {isWarning && <span className="badge badge-amber" style={{ fontSize: 9, flexShrink: 0 }}>80%</span>}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={() => onEdit(item)}
+            style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-violet)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+          >
+            <Edit3 size={13} />
+          </button>
+
+          <button
+            onClick={() => onDelete(item.id)}
+            style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Middle Row: Source and Target Account Flow */}
+      {(item.sourceAccount || item.account) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingLeft: 20 }}>
           {item.sourceAccount && (
-            <span style={{ fontSize: 10, color: 'var(--clr-text-3)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <span className="badge badge-neutral" style={{ fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ opacity: 0.6, fontSize: 9, textTransform: 'uppercase', fontWeight: 700 }}>From</span>
               <span>{item.sourceAccount.icon || '💳'} {item.sourceAccount.providerName}</span>
-              <span style={{ opacity: 0.6 }}>→</span>
             </span>
           )}
+          
+          {item.sourceAccount && item.account && (
+            <span style={{ opacity: 0.5, color: 'var(--clr-text-3)', fontSize: 11, display: 'flex', alignItems: 'center' }}>→</span>
+          )}
+          
           {item.account && (
-            <span className="badge badge-cyan" style={{ fontSize: 10 }}>
-              {item.account.icon || '💳'} {item.account.providerName}
+            <span className="badge badge-cyan" style={{ fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ opacity: 0.6, fontSize: 9, textTransform: 'uppercase', fontWeight: 700 }}>To</span>
+              <span>{item.account.icon || '💳'} {item.account.providerName}</span>
             </span>
           )}
         </div>
+      )}
 
-        {isOver && <span className="badge badge-rose" style={{ fontSize: 9 }}>OVER</span>}
-        {isWarning && <span className="badge badge-amber" style={{ fontSize: 9 }}>80%</span>}
-        
-        <button
-          onClick={() => onEdit(item)}
-          style={{ padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6 }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-violet)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
-        >
-          <Edit3 size={13} />
-        </button>
-
-        <button
-          onClick={() => onDelete(item.id)}
-          style={{ padding: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', transition: 'color 0.2s', borderRadius: 6 }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
-        >
-          <Trash2 size={13} />
-        </button>
-      </div>
-
-      {/* Progress */}
-      <div style={{ marginBottom: 6 }}>
-        <div className="progress-bar">
+      {/* Progress Bar */}
+      <div>
+        <div className="progress-bar" style={{ height: 6 }}>
           <motion.div
             className="progress-fill"
             initial={{ width: 0 }}
@@ -101,14 +128,15 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
+      {/* Bottom Row: Spent, Budget, and Usage Percentage */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+        <span style={{ color: 'var(--clr-text-3)' }}>
           Spent: <span style={{ color: isOver ? 'var(--clr-rose)' : 'var(--clr-text-2)', fontWeight: 600 }}>{formatRp(item.usedAmount)}</span>
         </span>
-        <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
+        <span style={{ color: 'var(--clr-text-3)' }}>
           Budget: <span style={{ color: 'var(--clr-text-2)', fontWeight: 600 }}>{formatRp(item.allocatedAmount)}</span>
         </span>
-        <span style={{ fontSize: 11, color: isOver ? 'var(--clr-rose)' : 'var(--clr-emerald)', fontWeight: 600 }}>
+        <span style={{ color: isOver ? 'var(--clr-rose)' : 'var(--clr-emerald)', fontWeight: 600 }}>
           {isOver ? `Over ${formatRp(item.usedAmount - item.allocatedAmount)}` : `${Math.round(usagePct)}% used`}
         </span>
       </div>
