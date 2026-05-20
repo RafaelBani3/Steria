@@ -206,10 +206,10 @@ export default function SavingsTracker() {
                 <button onClick={() => setShowTransferForm(false)} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}><X size={18} /></button>
               </div>
               <form onSubmit={handleTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {transferForm.savingsGoalId && transferForm.sourceAccountId === transferForm.destinationSavingsAccountId ? (
+                {transferForm.savingsGoalId && String(transferForm.sourceAccountId) === String(transferForm.destinationSavingsAccountId) ? (
                   <div style={{ padding: '16px', background: 'var(--bg-glass)', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '4px' }}>
                     <p style={{ fontSize: '13px', color: 'var(--clr-text)', lineHeight: 1.5 }}>
-                      Alokasi dana ke goal <strong>{goals.find(g => g.id === transferForm.savingsGoalId)?.goalName}</strong> menggunakan saldo dari tabungan <strong>{savingsAccounts.find(a => a.id === transferForm.sourceAccountId)?.accountName}</strong>.
+                      Alokasi dana ke goal <strong>{goals.find(g => String(g.id) === String(transferForm.savingsGoalId))?.goalName}</strong> menggunakan saldo dari tabungan <strong>{savingsAccounts.find(a => String(a.id) === String(transferForm.sourceAccountId))?.accountName}</strong>.
                     </p>
                   </div>
                 ) : (
