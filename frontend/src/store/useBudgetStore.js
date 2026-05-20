@@ -15,8 +15,6 @@ export const useBudgetStore = create((set, get) => ({
   fetchCategories: async () => {
     set({ isLoading: true });
     try {
-      // Seed defaults if none exist
-      await api.post('/budget-categories/seed');
       const res = await api.get('/budget-categories');
       set({ categories: res.data });
     } catch (err) {

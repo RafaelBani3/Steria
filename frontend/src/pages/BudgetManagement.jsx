@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, PieChart, X, Target, Edit3, ChevronDown, ChevronRight, Sliders } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ const ALLOCATION_PRESETS = [
   { id: 'custom', label: 'Custom', desc: 'Atur Sendiri', needs: null, wants: null, savings: null, color: 'var(--clr-amber)' },
 ];
 
-function BudgetItemRow({ item, onEdit, onDelete }) {
+const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
   const usagePct = item.allocatedAmount > 0 ? Math.min(100, (item.usedAmount / item.allocatedAmount) * 100) : 0;
   const isOver = usagePct >= 100;
   const isWarning = usagePct >= 80 && !isOver;
@@ -114,9 +114,9 @@ function BudgetItemRow({ item, onEdit, onDelete }) {
       </div>
     </motion.div>
   );
-}
+});
 
-function CategorySection({ category, items, totalIncome, onAddItem, onEditItem, onDeleteItem, allocationRule }) {
+const CategorySection = memo(function CategorySection({ category, items, totalIncome, onAddItem, onEditItem, onDeleteItem, allocationRule }) {
   const [expanded, setExpanded] = useState(true);
   const config = CATEGORY_CONFIG[category.categoryName] || {};
   const totalAllocated = items.reduce((s, i) => s + i.allocatedAmount, 0);
@@ -204,7 +204,7 @@ function CategorySection({ category, items, totalIncome, onAddItem, onEditItem, 
       </AnimatePresence>
     </motion.div>
   );
-}
+});
 
 export default function BudgetManagement() {
   const { categories, budgetItems, fetchCategories, fetchBudgetItems, createBudgetItem, updateBudgetItem, deleteBudgetItem, getTotals } = useBudgetStore();
@@ -230,9 +230,11 @@ export default function BudgetManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activePreset = ALLOCATION_PRESETS.find(p => p.id === selectedPreset) || ALLOCATION_PRESETS[0];
-  const allocationRule = selectedPreset === 'custom'
-    ? customRule
-    : { needs: activePreset.needs, wants: activePreset.wants, savings: activePreset.savings };
+  const allocationRule = useMemo(() => {
+    return selectedPreset === 'custom'
+      ? customRule
+      : { needs: activePreset.needs, wants: activePreset.wants, savings: activePreset.savings };
+  }, [selectedPreset, customRule, activePreset]);
   const customTotal = customRule.needs + customRule.wants + customRule.savings;
 
   // Persist preset selection
@@ -255,7 +257,17 @@ export default function BudgetManagement() {
   const totalIncome = getTotalIncome();
   const { totalAllocated, totalUsed, totalRemaining } = getTotals();
 
-  const handleOpenAddItem = (category) => {
+  const categoriesWithItems = useMemo(() => {
+    const order = { Needs: 1, Wants: 2, Savings: 3 };
+    return [...categories]
+      .sort((a, b) => (order[a.categoryName] || 99) - (order[b.categoryName] || 99))
+      .map((cat) => ({
+        ...cat,
+        items: budgetItems.filter((i) => i.categoryId === cat.id),
+      }));
+  }, [categories, budgetItems]);
+
+  const handleOpenAddItem = useCallback((category) => {
     setTargetCategory(category);
     const isSavings = category.categoryName === 'Savings';
     const defaultAccountId = isSavings
@@ -264,9 +276,9 @@ export default function BudgetManagement() {
     const defaultSourceId = cashflowAccounts.find(acc => acc.currentBalance > 0)?.id || '';
     setForm({ itemName: '', allocatedAmount: '', sourceAccountId: defaultSourceId, accountId: defaultAccountId, color: '#7C3AED' });
     setShowAddItem(true);
-  };
+  }, [savingsAccounts, cashflowAccounts]);
 
-  const handleOpenEditItem = (item) => {
+  const handleOpenEditItem = useCallback((item) => {
     setEditingItem(item);
     setTargetCategory(item.category);
     setForm({
@@ -277,7 +289,7 @@ export default function BudgetManagement() {
       color: item.color || '#7C3AED'
     });
     setShowEditItem(true);
-  };
+  }, []);
 
   const handleCreateItem = async (e) => {
     e.preventDefault();
@@ -364,7 +376,7 @@ export default function BudgetManagement() {
     }
   };
 
-  const handleDeleteItem = async (itemId) => {
+  const handleDeleteItem = useCallback(async (itemId) => {
     if (!confirm('Delete this budget item?')) return;
     try {
       await deleteBudgetItem(itemId);
@@ -373,7 +385,7 @@ export default function BudgetManagement() {
     } catch {
       toast.error('Failed to delete');
     }
-  };
+  }, [deleteBudgetItem, fetchAccounts]);
 
   const allocationPercent = totalIncome > 0 ? Math.min(100, (totalAllocated / totalIncome) * 100) : 0;
 
@@ -497,9 +509,15 @@ export default function BudgetManagement() {
         </div>
         <div className="glass" style={{ borderRadius: 14, padding: '12px 14px' }}>
           <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Sisa Belum Teralokasi</p>
-          <p className="font-display" style={{ fontSize: 20, fontWeight: 800, color: totalRemaining > 0 ? 'var(--clr-emerald)' : 'var(--clr-rose)' }}>{formatRp(totalRemaining)}</p>
+          <p className="font-display" style={{ fontSize: 20, fontWeight: 800, color: (totalIncome - totalAllocated) >= 0 ? 'var(--clr-emerald)' : 'var(--clr-rose)' }}>
+            {formatRp(totalIncome - totalAllocated)}
+          </p>
           <p style={{ fontSize: 9, color: 'var(--clr-text-3)', fontWeight: 600, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            {totalRemaining <= 0 ? '✅ Dana Tersalurkan Semua' : '⚠️ Masih ada yang belum dialokasi'}
+            {(totalIncome - totalAllocated) === 0 
+              ? '✅ Dana Tersalurkan Semua' 
+              : (totalIncome - totalAllocated) < 0 
+                ? '⚠️ Alokasi Melebihi Income' 
+                : '⚠️ Masih ada yang belum dialokasi'}
           </p>
         </div>
       </div>
@@ -684,29 +702,24 @@ export default function BudgetManagement() {
       </motion.div>
 
       {/* Categories */}
-      {categories.length === 0 ? (
+      {categoriesWithItems.length === 0 ? (
         <div className="glass" style={{ padding: 48, textAlign: 'center', borderRadius: 20 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
           <p style={{ color: 'var(--clr-text)', fontWeight: 600, marginBottom: 4 }}>Loading budget categories...</p>
         </div>
       ) : (
-        [...categories]
-          .sort((a, b) => {
-            const order = { Needs: 1, Wants: 2, Savings: 3 };
-            return (order[a.categoryName] || 99) - (order[b.categoryName] || 99);
-          })
-          .map((cat) => (
-            <CategorySection
-              key={cat.id}
-              category={cat}
-              items={budgetItems.filter((i) => i.categoryId === cat.id)}
-              totalIncome={totalIncome}
-              onAddItem={handleOpenAddItem}
-              onEditItem={handleOpenEditItem}
-              onDeleteItem={handleDeleteItem}
-              allocationRule={allocationRule}
-            />
-          ))
+        categoriesWithItems.map((cat) => (
+          <CategorySection
+            key={cat.id}
+            category={cat}
+            items={cat.items}
+            totalIncome={totalIncome}
+            onAddItem={handleOpenAddItem}
+            onEditItem={handleOpenEditItem}
+            onDeleteItem={handleDeleteItem}
+            allocationRule={allocationRule}
+          />
+        ))
       )}
 
       {/* Add Item Modal */}

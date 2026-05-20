@@ -3,7 +3,7 @@ import prisma from '../prisma/index.js';
 // ─── GET BUDGET CATEGORIES ────────────────────────────
 export const getBudgetCategories = async (req, res) => {
   try {
-    const categories = await prisma.budgetCategory.findMany({
+    let categories = await prisma.budgetCategory.findMany({
       where: { userId: req.user.userId },
       include: {
         budgetItems: {
@@ -14,6 +14,30 @@ export const getBudgetCategories = async (req, res) => {
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    if (categories.length === 0) {
+      const defaults = ['Needs', 'Wants', 'Savings'];
+      await Promise.all(
+        defaults.map((name) =>
+          prisma.budgetCategory.create({
+            data: { userId: req.user.userId, categoryName: name },
+          })
+        )
+      );
+
+      categories = await prisma.budgetCategory.findMany({
+        where: { userId: req.user.userId },
+        include: {
+          budgetItems: {
+            include: {
+              account: { select: { id: true, accountName: true, providerName: true, color: true, icon: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+    }
+
     res.json(categories);
   } catch (error) {
     console.error("Error in getBudgetCategories:", error);
