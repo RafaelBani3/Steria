@@ -1,18 +1,26 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+const CACHE_TTL = 60 * 1000; // 60 seconds for notifications
+
 export const useNotificationStore = create((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
+  lastFetched: null, // cache timestamp
 
-  fetchNotifications: async () => {
+  fetchNotifications: async (force = false) => {
+    const { lastFetched, isLoading } = get();
+    // Skip if already loading or data is fresh (within TTL)
+    if (isLoading) return;
+    if (!force && lastFetched && (Date.now() - lastFetched) < CACHE_TTL) return;
+
     set({ isLoading: true });
     try {
       const res = await api.get('/notifications');
       const notifications = res.data;
       const unreadCount = notifications.filter(n => !n.isRead).length;
-      set({ notifications, unreadCount, isLoading: false });
+      set({ notifications, unreadCount, isLoading: false, lastFetched: Date.now() });
     } catch (err) {
       console.error('Fetch Notifications Error:', err);
       set({ isLoading: false });
@@ -23,7 +31,7 @@ export const useNotificationStore = create((set, get) => ({
     try {
       await api.patch(`/notifications/${id}/read`);
       set(state => {
-        const updated = state.notifications.map(n => 
+        const updated = state.notifications.map(n =>
           n.id === id ? { ...n, isRead: true } : n
         );
         return {

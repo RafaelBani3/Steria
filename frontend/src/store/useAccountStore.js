@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
 export const useAccountStore = create((set, get) => ({
   accounts: [],
   cashflowAccounts: [],
@@ -9,8 +11,14 @@ export const useAccountStore = create((set, get) => ({
   totalSavings: 0,
   totalBalance: 0,
   isLoading: false,
+  lastFetched: null, // cache timestamp
 
-  fetchAccounts: async () => {
+  fetchAccounts: async (force = false) => {
+    const { lastFetched, isLoading } = get();
+    // Skip if already loading or data is fresh (within TTL)
+    if (isLoading) return;
+    if (!force && lastFetched && (Date.now() - lastFetched) < CACHE_TTL) return;
+
     set({ isLoading: true });
     try {
       const res = await api.get('/accounts/summary');
@@ -21,6 +29,7 @@ export const useAccountStore = create((set, get) => ({
         totalCashflow: res.data.totalCashflow,
         totalSavings: res.data.totalSavings,
         totalBalance: res.data.totalBalance,
+        lastFetched: Date.now(),
       });
     } catch (err) {
       console.error('fetchAccounts error:', err);
@@ -29,14 +38,34 @@ export const useAccountStore = create((set, get) => ({
     }
   },
 
+  invalidateCache: () => set({ lastFetched: null }),
+
   selectedAccountHistory: [],
   isLoadingHistory: false,
+  historyCache: {}, // { [accountId]: { data, fetchedAt } }
 
-  fetchAccountHistory: async (accountId) => {
+  fetchAccountHistory: async (accountId, force = false) => {
+    const { historyCache, isLoadingHistory } = get();
+    if (isLoadingHistory) return;
+
+    // Use cached history if fresh
+    const cached = historyCache[accountId];
+    if (!force && cached && (Date.now() - cached.fetchedAt) < CACHE_TTL) {
+      set({ selectedAccountHistory: cached.data });
+      return;
+    }
+
     set({ isLoadingHistory: true, selectedAccountHistory: [] });
     try {
       const res = await api.get(`/accounts/${accountId}/history`);
-      set({ selectedAccountHistory: res.data });
+      const data = res.data;
+      set((state) => ({
+        selectedAccountHistory: data,
+        historyCache: {
+          ...state.historyCache,
+          [accountId]: { data, fetchedAt: Date.now() },
+        },
+      }));
     } catch (err) {
       console.error('fetchAccountHistory error:', err);
     } finally {
@@ -47,7 +76,7 @@ export const useAccountStore = create((set, get) => ({
   createAccount: async (data) => {
     try {
       const res = await api.post('/accounts', data);
-      await get().fetchAccounts(); // re-fetch for fresh summary
+      await get().fetchAccounts(true); // force refresh
       return res.data;
     } catch (err) {
       console.error('createAccount error:', err);
@@ -58,7 +87,7 @@ export const useAccountStore = create((set, get) => ({
   updateAccount: async (accountId, data) => {
     try {
       const res = await api.patch(`/accounts/${accountId}`, data);
-      await get().fetchAccounts();
+      await get().fetchAccounts(true); // force refresh
       return res.data;
     } catch (err) {
       console.error('updateAccount error:', err);
@@ -73,6 +102,7 @@ export const useAccountStore = create((set, get) => ({
         accounts: state.accounts.filter((a) => a.id !== accountId),
         cashflowAccounts: state.cashflowAccounts.filter((a) => a.id !== accountId),
         savingsAccounts: state.savingsAccounts.filter((a) => a.id !== accountId),
+        lastFetched: null, // invalidate
       }));
     } catch (err) {
       console.error('deleteAccount error:', err);
@@ -85,7 +115,7 @@ export const useAccountStore = create((set, get) => ({
     set({ isLoadingAction: true });
     try {
       const res = await api.post('/transfers', data);
-      await get().fetchAccounts();
+      await get().fetchAccounts(true); // force refresh after transfer
       return res.data;
     } catch (err) {
       console.error('createTransfer error:', err);

@@ -823,8 +823,8 @@ export default function Accounts() {
   const [activeTab, setActiveTab] = useState('accounts'); // 'accounts' | 'income'
 
   useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+    fetchAccounts(); // will be deduplicated by TTL cache if data is fresh
+  }, []);
 
   const handleDelete = async (account) => {
     if (!confirm(`Remove "${account.accountName}"? This will deactivate it.`)) return;
@@ -880,7 +880,7 @@ export default function Accounts() {
           </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={fetchAccounts} className="btn-ghost" style={{ padding: '10px' }}>
+            <button onClick={() => fetchAccounts(true)} className="btn-ghost" style={{ padding: '10px' }}>
               <RefreshCw size={16} />
             </button>
             <button onClick={() => setShowCreate(true)} className="btn-primary">

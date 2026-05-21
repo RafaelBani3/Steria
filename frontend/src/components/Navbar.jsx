@@ -19,9 +19,9 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchNotifications();
-    // Refresh notifications every 5 minutes
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    fetchNotifications(); // deduplicated by TTL if MobileHeader already fetched
+    // Refresh notifications every 5 minutes (forced)
+    const interval = setInterval(() => fetchNotifications(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 

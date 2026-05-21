@@ -8,6 +8,7 @@ export const getNotifications = async (req, res) => {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+    res.set('Cache-Control', 'private, max-age=30');
     res.json(notifications);
   } catch (error) {
     res.status(500).json({ error: error.message });

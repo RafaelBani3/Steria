@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
 export const useBudgetStore = create((set, get) => ({
   categories: [],
   budgetItems: [],
@@ -9,14 +11,19 @@ export const useBudgetStore = create((set, get) => ({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   })(),
+  lastFetchedItems: null,     // { period: string, at: timestamp }
+  lastFetchedCategories: null, // timestamp
 
   setSelectedPeriod: (period) => set({ selectedPeriod: period }),
 
-  fetchCategories: async () => {
+  fetchCategories: async (force = false) => {
+    const { lastFetchedCategories, isLoading } = get();
+    if (!force && lastFetchedCategories && (Date.now() - lastFetchedCategories) < CACHE_TTL) return;
+
     set({ isLoading: true });
     try {
       const res = await api.get('/budget-categories');
-      set({ categories: res.data });
+      set({ categories: res.data, lastFetchedCategories: Date.now() });
     } catch (err) {
       console.error('fetchCategories error:', err);
     } finally {
@@ -24,12 +31,23 @@ export const useBudgetStore = create((set, get) => ({
     }
   },
 
-  fetchBudgetItems: async (period) => {
+  fetchBudgetItems: async (period, force = false) => {
+    const { lastFetchedItems, isLoading } = get();
+    const p = period || get().selectedPeriod;
+
+    // Skip if already loading or data is still fresh for same period
+    if (isLoading) return;
+    if (
+      !force &&
+      lastFetchedItems &&
+      lastFetchedItems.period === p &&
+      (Date.now() - lastFetchedItems.at) < CACHE_TTL
+    ) return;
+
     set({ isLoading: true });
     try {
-      const p = period || get().selectedPeriod;
       const res = await api.get('/budget-items', { params: { period: p } });
-      set({ budgetItems: res.data });
+      set({ budgetItems: res.data, lastFetchedItems: { period: p, at: Date.now() } });
     } catch (err) {
       console.error('fetchBudgetItems error:', err);
     } finally {
@@ -43,7 +61,10 @@ export const useBudgetStore = create((set, get) => ({
         ...data,
         period: get().selectedPeriod,
       });
-      set((state) => ({ budgetItems: [...state.budgetItems, res.data] }));
+      set((state) => ({
+        budgetItems: [...state.budgetItems, res.data],
+        lastFetchedItems: null, // invalidate
+      }));
       return res.data;
     } catch (err) {
       console.error('createBudgetItem error:', err);
@@ -56,6 +77,7 @@ export const useBudgetStore = create((set, get) => ({
       const res = await api.patch(`/budget-items/${itemId}`, data);
       set((state) => ({
         budgetItems: state.budgetItems.map((item) => (item.id === itemId ? res.data : item)),
+        lastFetchedItems: null, // invalidate so next fetch is fresh
       }));
       return res.data;
     } catch (err) {
@@ -69,6 +91,7 @@ export const useBudgetStore = create((set, get) => ({
       await api.delete(`/budget-items/${itemId}`);
       set((state) => ({
         budgetItems: state.budgetItems.filter((item) => item.id !== itemId),
+        lastFetchedItems: null, // invalidate
       }));
     } catch (err) {
       console.error('deleteBudgetItem error:', err);

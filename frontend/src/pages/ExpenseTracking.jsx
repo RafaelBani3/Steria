@@ -63,8 +63,8 @@ export default function ExpenseTracking() {
     if (!form.accountId || !form.amount) { toast.error('Please fill required fields'); return; }
     try {
       await createExpense(form);
-      await fetchAccounts();
-      await fetchBudgetItems();
+      await fetchAccounts(true);  // force-bust cache after balance change
+      await fetchBudgetItems(null, true); // force-bust budget usage cache
       toast.success('Expense recorded! 💸');
       setForm({
         accountId: cashflowAccounts[0]?.id || '',
@@ -81,8 +81,8 @@ export default function ExpenseTracking() {
     if (!confirm(`Delete "${exp.description || 'this expense'}" of ${formatRp(exp.amount)}?`)) return;
     try {
       await deleteExpense(exp.id);
-      await fetchAccounts();
-      await fetchBudgetItems();
+      await fetchAccounts(true);  // force-bust cache
+      await fetchBudgetItems(null, true);
       toast.success('Expense removed');
     } catch {
       toast.error('Failed to delete expense');

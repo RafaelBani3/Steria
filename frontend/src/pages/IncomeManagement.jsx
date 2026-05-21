@@ -56,7 +56,7 @@ export default function IncomeManagement() {
     if (!form.accountId || !form.amount) { toast.error('Please fill all required fields'); return; }
     try {
       await createIncome(form);
-      await fetchAccounts(); // refresh balances
+      await fetchAccounts(true); // force-refresh balances
       toast.success('Income added successfully! 💸');
       setForm({ accountId: cashflowAccounts[0]?.id || '', amount: '', incomeType: 'SALARY', description: '', transactionDate: now.toISOString().split('T')[0] });
       setShowForm(false);
@@ -69,7 +69,7 @@ export default function IncomeManagement() {
     if (!confirm(`Delete "${inc.description || inc.incomeType}" income of ${formatRp(inc.amount)}?`)) return;
     try {
       await deleteIncome(inc.id);
-      await fetchAccounts(); // refresh balances
+      await fetchAccounts(true); // force-refresh balances
       toast.success('Income removed');
     } catch {
       toast.error('Failed to delete income');

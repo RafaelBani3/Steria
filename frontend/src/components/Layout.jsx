@@ -18,8 +18,11 @@ function MobileHeader() {
   const notifRef = useRef(null);
 
   useEffect(() => {
+    // Notifications are already fetched by Navbar on desktop.
+    // On mobile, trigger fetch only once via the shared store (which handles deduplication via TTL cache).
     fetchNotifications();
-  }, [fetchNotifications]);
+  }, []);
+
 
   useEffect(() => {
     const handler = (e) => {

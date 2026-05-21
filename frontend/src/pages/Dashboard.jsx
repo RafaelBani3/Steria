@@ -30,12 +30,13 @@ export default function Dashboard() {
   const year = now.getFullYear();
 
   useEffect(() => {
+    // All fetches are TTL-cached; navigating back here won't re-fetch within 30s
     fetchAccounts();
     fetchIncomes(month, year);
     fetchExpenses(month, year);
     fetchBudgetItems();
     fetchCategories();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalIncome = getTotalIncome();
   const totalExpenses = getTotalExpenses();
