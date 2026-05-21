@@ -4,18 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAIStore } from '../store/useAIStore';
 
 export default function FloatingAIButton() {
-  const { openModal, isOpen } = useAIStore();
+  const { isOpen } = useAIStore();
   const navigate = useNavigate();
 
   if (isOpen) return null;
 
   const handleClick = () => {
-    // Try to open modal; if store doesn't respond, navigate to copilot page
-    try {
-      openModal();
-    } catch {
-      navigate('/copilot');
-    }
+    navigate('/copilot');
   };
 
   return (
