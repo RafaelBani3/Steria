@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CreditCard, PieChart, Receipt, PiggyBank } from 'lucide-react';
+import { LayoutDashboard, CreditCard, PieChart, Receipt, PiggyBank, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const TABS = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { path: '/accounts',  icon: CreditCard,      label: 'Accounts' },
+  { path: '/copilot',   icon: Bot,             label: 'Copilot' },
   { path: '/budgets',   icon: PieChart,         label: 'Budgets' },
   { path: '/expenses',  icon: Receipt,          label: 'Expenses' },
 ];
