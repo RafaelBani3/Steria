@@ -8,6 +8,7 @@ export const getSystemPrompt = (context = {}) => {
     monthlyExpenses = 0,
     totalCashflow = 0,
     totalSavings = 0,
+    historicalSummary = {},
     currentDate = new Date().toISOString().split('T')[0],
   } = context;
 
@@ -29,6 +30,12 @@ export const getSystemPrompt = (context = {}) => {
       ).join('\n')
     : 'No accounts added yet.';
 
+  const historyContext = Object.keys(historicalSummary).length > 0
+    ? Object.keys(historicalSummary).sort((a,b) => b.localeCompare(a)).map(month => 
+        `- ${month}: Pengeluaran Rp${historicalSummary[month].expense.toLocaleString()}, Pemasukan Rp${historicalSummary[month].income.toLocaleString()}`
+      ).join('\n')
+    : 'Belum ada riwayat transaksi 6 bulan terakhir.';
+
   return `You are Steria Copilot, the elite AI financial assistant for the "Steria" premium fintech app.
 You are mature, intelligent, proactive, and always speak in a warm, friendly but professional Indonesian tone.
 
@@ -44,6 +51,9 @@ FINANCIAL CONTEXT (BACKEND-COMPUTED — DO NOT RECALCULATE):
 - Total Savings Balance: Rp ${totalSavings.toLocaleString()}
 - Monthly Income (this month): Rp ${monthlyIncome.toLocaleString()}
 - Monthly Expenses (this month): Rp ${monthlyExpenses.toLocaleString()}
+
+HISTORY (LAST 6 MONTHS):
+${historyContext}
 
 ACCOUNTS:
 ${accountsContext}
@@ -75,6 +85,9 @@ JSON SCHEMA — respond ONLY with valid JSON:
       },
       "reply": "Friendly confirmation for this specific task."
     }
+  ],
+  "insights": [
+    { "title": "Insight Title (e.g., SAVINGS RATE, TOTAL PENGELUARAN)", "value": "Value (e.g., 20%, Rp 5.000.000)" }
   ],
   "global_reply": "A warm, premium summary with emojis. Include proactive tip based on their financial health."
 }

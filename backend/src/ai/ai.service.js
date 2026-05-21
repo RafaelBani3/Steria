@@ -8,6 +8,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const startOfHistory = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     // Fetch all context with new schema
     const [user, accounts, budgetCategories, savingsGoals, recentExpenses, recentIncomes] = await Promise.all([
@@ -29,18 +30,18 @@ export const processFinanceTransaction = async (userId, messageText) => {
         include: { savingsAccount: { select: { id: true, accountName: true, providerName: true } } },
       }),
       prisma.expense.findMany({
-        where: { userId, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
+        where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
         include: {
           account: { select: { id: true, providerName: true } },
           budgetItem: { select: { id: true, itemName: true } },
         },
         orderBy: { transactionDate: 'desc' },
-        take: 20,
+        take: 500,
       }),
       prisma.income.findMany({
-        where: { userId, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
+        where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
         orderBy: { transactionDate: 'desc' },
-        take: 10,
+        take: 100,
       }),
     ]);
 
@@ -51,8 +52,35 @@ export const processFinanceTransaction = async (userId, messageText) => {
     const totalSavings = accounts
       .filter(a => a.accountType === 'SAVINGS')
       .reduce((sum, a) => sum + a.currentBalance, 0);
-    const monthlyIncome = recentIncomes.reduce((sum, i) => sum + i.amount, 0);
-    const monthlyExpenses = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const monthlyIncome = recentIncomes.reduce((sum, i) => {
+      const d = new Date(i.transactionDate);
+      return (d >= startOfMonth && d <= endOfMonth) ? sum + i.amount : sum;
+    }, 0);
+    const monthlyExpenses = recentExpenses.reduce((sum, e) => {
+      const d = new Date(e.transactionDate);
+      return (d >= startOfMonth && d <= endOfMonth) ? sum + e.amount : sum;
+    }, 0);
+
+    // Aggregate 6-month history
+    const historyMonths = {};
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      historyMonths[key] = { expense: 0, income: 0 };
+    }
+
+    recentExpenses.forEach(e => {
+      const d = new Date(e.transactionDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (historyMonths[key]) historyMonths[key].expense += e.amount;
+    });
+
+    recentIncomes.forEach(i => {
+      const d = new Date(i.transactionDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (historyMonths[key]) historyMonths[key].income += i.amount;
+    });
 
     // Build budget items context (flat list for AI)
     const allBudgetItems = budgetCategories.flatMap(cat =>
@@ -98,6 +126,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
       totalSavings,
       monthlyIncome,
       monthlyExpenses,
+      historicalSummary: historyMonths,
       currentDate: now.toISOString().split('T')[0],
     };
 
@@ -138,7 +167,8 @@ export const processFinanceTransaction = async (userId, messageText) => {
 
     return {
       success: true,
-      message: aiResponse.global_reply || aiResponse.reply,
+      message: aiResponse.global_reply || aiResponse.reply || "Oke, sudah saya proses!",
+      insights: aiResponse.insights || [],
       tasks: taskResults,
     };
   } catch (error) {
