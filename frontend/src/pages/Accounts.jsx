@@ -495,11 +495,19 @@ function AccountDetailsModal({ account, onClose }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20, flexShrink: 0 }}>
           <div className="glass" style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
             <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Total Pengeluaran</p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-rose)' }}>{formatRp(totalExpenses)}</p>
+            {isLoadingHistory ? (
+              <div className="shimmer" style={{ height: 22, width: '60%', borderRadius: 6, marginTop: 2 }}></div>
+            ) : (
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-rose)' }}>{formatRp(totalExpenses)}</p>
+            )}
           </div>
           <div className="glass" style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--glass-border)' }}>
             <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Total Transaksi</p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-text)' }}>{totalTransactions}x</p>
+            {isLoadingHistory ? (
+              <div className="shimmer" style={{ height: 22, width: '40%', borderRadius: 6, marginTop: 2 }}></div>
+            ) : (
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-text)' }}>{totalTransactions}x</p>
+            )}
           </div>
         </div>
 
