@@ -11,7 +11,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
     const startOfHistory = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     // Fetch all context with new schema
-    const [user, accounts, budgetCategories, savingsGoals, recentExpenses, recentIncomes] = await Promise.all([
+    const [user, accounts, budgetCategories, recentExpenses, recentIncomes] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
       prisma.account.findMany({
         where: { userId, isActive: true },
@@ -24,10 +24,6 @@ export const processFinanceTransaction = async (userId, messageText) => {
             include: { account: { select: { id: true, accountName: true, providerName: true } } },
           },
         },
-      }),
-      prisma.savingsGoal.findMany({
-        where: { userId },
-        include: { savingsAccount: { select: { id: true, accountName: true, providerName: true } } },
       }),
       prisma.expense.findMany({
         where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
@@ -114,14 +110,6 @@ export const processFinanceTransaction = async (userId, messageText) => {
       userName: user?.name || 'User',
       accounts: accountStats,
       budgetItems: allBudgetItems,
-      savingsGoals: savingsGoals.map(g => ({
-        id: g.id,
-        name: g.goalName,
-        targetAmount: g.targetAmount,
-        currentAmount: g.currentAmount,
-        progressPercent: g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0,
-        accountName: g.savingsAccount?.providerName || 'Savings Account',
-      })),
       totalCashflow,
       totalSavings,
       monthlyIncome,
@@ -155,7 +143,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
           dbResult = await handleAllocation(userId, task.data, budgetCategories);
           break;
         case 'SAVING':
-          dbResult = await handleSaving(userId, task.data, savingsGoals, accounts);
+          dbResult = await handleSaving(userId, task.data, accounts);
           break;
         case 'INQUIRY':
           break;
@@ -288,26 +276,21 @@ async function handleAllocation(userId, data, budgetCategories) {
   });
 }
 
-async function handleSaving(userId, data, savingsGoals, accounts) {
-  const goal = savingsGoals.find(g =>
-    g.goalName?.toLowerCase().includes(data.subcategory?.toLowerCase())
-  );
-  if (!goal) return null;
-
+async function handleSaving(userId, data, accounts) {
   const cashflowAccount = accounts.find(a => a.accountType === 'CASHFLOW');
-  const savingsAccount = accounts.find(a => a.id === goal.savingsAccountId);
+  const savingsAccount = accounts.find(a => a.accountType === 'SAVINGS');
   if (!cashflowAccount || !savingsAccount) return null;
 
-  // Create savings transaction
-  const transaction = await prisma.savingsTransaction.create({
+  // Create savings transaction via Transfer
+  const transaction = await prisma.transfer.create({
     data: {
       userId,
-      sourceAccountId: cashflowAccount.id,
-      destinationSavingsAccountId: savingsAccount.id,
-      savingsGoalId: goal.id,
+      fromAccountId: cashflowAccount.id,
+      toAccountId: savingsAccount.id,
       amount: data.amount,
-      transactionDate: data.date ? new Date(data.date) : new Date(),
+      transferType: 'ADD_FUNDS',
       notes: data.description,
+      transactionDate: data.date ? new Date(data.date) : new Date(),
     },
   });
 
@@ -319,10 +302,6 @@ async function handleSaving(userId, data, savingsGoals, accounts) {
   await prisma.account.update({
     where: { id: savingsAccount.id },
     data: { currentBalance: { increment: data.amount } },
-  });
-  await prisma.savingsGoal.update({
-    where: { id: goal.id },
-    data: { currentAmount: { increment: data.amount } },
   });
 
   return transaction;

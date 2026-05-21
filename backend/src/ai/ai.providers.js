@@ -2,9 +2,9 @@ import OpenAI from "openai";
 
 // AI Models definition
 const MODELS = [
-  { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', name: 'Gemini 2.0 Flash Lite' },
-  { id: 'meta-llama/llama-3.2-11b-vision-instruct:free', name: 'Llama 3.2 11B' },
-  { id: 'google/gemini-2.0-pro-exp-02-05:free', name: 'Gemini 2.0 Pro Exp' }
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B' },
+  { id: 'deepseek/deepseek-v4-flash:free', name: 'DeepSeek V4 Flash' },
+  { id: 'nousresearch/hermes-3-llama-3.1-405b:free', name: 'Hermes 3 405B' }
 ];
 
 const getOpenRouterClient = () => {

@@ -1,7 +1,6 @@
 export const getSystemPrompt = (context = {}) => {
   const {
     budgetItems = [],
-    savingsGoals = [],
     accounts = [],
     userName = 'User',
     monthlyIncome = 0,
@@ -18,11 +17,6 @@ export const getSystemPrompt = (context = {}) => {
       ).join('\n')
     : 'No budget items defined yet.';
 
-  const savingsContext = savingsGoals.length > 0
-    ? savingsGoals.map(goal =>
-        `- ${goal.name}: Target Rp${goal.targetAmount.toLocaleString()}, Current Rp${goal.currentAmount.toLocaleString()} (${goal.progressPercent}% complete) — ${goal.accountName}`
-      ).join('\n')
-    : 'No savings goals defined yet.';
 
   const accountsContext = accounts.length > 0
     ? accounts.map(acc =>
@@ -60,9 +54,6 @@ ${accountsContext}
 
 BUDGET ITEMS:
 ${budgetContext}
-
-SAVINGS GOALS:
-${savingsContext}
 
 CRITICAL RULES:
 1. Use the CONTEXT above for all numerical answers — never hallucinate numbers.
