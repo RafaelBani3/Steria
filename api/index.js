@@ -44,6 +44,26 @@ app.get('/api', (req, res) => {
   res.json({ status: 'Steria API is running' });
 });
 
+import prisma from '../backend/src/prisma/index.js';
+app.get('/api/diagnose', async (req, res) => {
+  try {
+    const dbUrl = process.env.DATABASE_URL || 'not set';
+    const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+    const userCount = await prisma.user.count();
+    res.json({
+      status: 'success',
+      database_url: maskedUrl,
+      userCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
