@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { Bot, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAIStore } from '../store/useAIStore';
 
 export default function FloatingAIButton() {
   const { isOpen } = useAIStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  if (isOpen) return null;
+  if (isOpen || location.pathname === '/copilot') return null;
 
   const handleClick = () => {
     navigate('/copilot');
