@@ -12,7 +12,7 @@ import incomeRoutes from './routes/income.routes.js';
 import budgetCategoryRoutes from './routes/budget.category.routes.js';
 import budgetItemRoutes from './routes/budget.item.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
-import savingRoutes from './routes/saving.routes.js';
+import transferRoutes from './routes/transfer.routes.js';
 
 // Support
 import notificationRoutes from './routes/notification.routes.js';
@@ -63,7 +63,7 @@ app.use('/api/income', incomeRoutes);
 app.use('/api/budget-categories', budgetCategoryRoutes);
 app.use('/api/budget-items', budgetItemRoutes);
 app.use('/api/expenses', expenseRoutes);
-app.use('/api/savings', savingRoutes);
+app.use('/api/transfers', transferRoutes);
 
 // Support
 app.use('/api/notifications', notificationRoutes);

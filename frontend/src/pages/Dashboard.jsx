@@ -5,7 +5,6 @@ import { TrendingUp, TrendingDown, Wallet, PiggyBank, ArrowUpRight, Bot } from '
 import { useAccountStore } from '../store/useAccountStore';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
-import { useSavingsStore } from '../store/useSavingsStore';
 import { useBudgetStore } from '../store/useBudgetStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, PieChart, Pie, Cell } from 'recharts';
@@ -21,10 +20,9 @@ const fmtFull = (n) =>
 
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const { totalCashflow, totalSavings, totalBalance, cashflowAccounts, fetchAccounts } = useAccountStore();
+  const { totalCashflow, totalSavings, totalBalance, cashflowAccounts, savingsAccounts, fetchAccounts } = useAccountStore();
   const { incomes, fetchIncomes, getTotalIncome } = useIncomeStore();
   const { expenses, fetchExpenses, getTotalExpenses } = useExpenseStore();
-  const { goals, fetchGoals } = useSavingsStore();
   const { budgetItems, categories, fetchBudgetItems, fetchCategories, getTotals } = useBudgetStore();
 
   const now = new Date();
@@ -35,7 +33,6 @@ export default function Dashboard() {
     fetchAccounts();
     fetchIncomes(month, year);
     fetchExpenses(month, year);
-    fetchGoals();
     fetchBudgetItems();
     fetchCategories();
   }, []);
@@ -134,7 +131,7 @@ export default function Dashboard() {
             {fmt(totalSavings)}
           </p>
           <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
-            {goals.length} Goals
+            {savingsAccounts.length} Accounts
           </p>
         </motion.div>
       </div>
@@ -368,7 +365,7 @@ export default function Dashboard() {
       )}
 
       {/* ── Savings Goals ─────────────────────── */}
-      {goals.length > 0 && (
+      {savingsAccounts.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -377,27 +374,38 @@ export default function Dashboard() {
           style={{ borderRadius: 18, padding: '16px 16px' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)' }}>Savings Goals</p>
-            <Link to="/savings" style={{ fontSize: 11, color: 'var(--clr-emerald)', textDecoration: 'none', fontWeight: 600 }}>View All</Link>
+            <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)' }}>Savings Accounts / Goals</p>
+            <Link to="/accounts" style={{ fontSize: 11, color: 'var(--clr-emerald)', textDecoration: 'none', fontWeight: 600 }}>View All</Link>
           </div>
-          {goals.slice(0, 3).map((goal) => {
-            const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
+          {savingsAccounts.slice(0, 3).map((acc) => {
+            const pct = acc.targetAmount > 0 ? Math.min(100, (acc.currentBalance / acc.targetAmount) * 100) : 0;
             return (
-              <div key={goal.id} style={{ marginBottom: 12 }}>
+              <div key={acc.id} style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text)' }}>{goal.goalName}</p>
-                    <p style={{ fontSize: 10, color: 'var(--clr-text-3)' }}>{goal.savingsAccount?.providerName}</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text)' }}>{acc.accountName}</p>
+                    <p style={{ fontSize: 10, color: 'var(--clr-text-3)' }}>{acc.providerName}</p>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-emerald)' }}>{Math.round(pct)}%</span>
+                  {acc.targetAmount > 0 && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-emerald)' }}>{Math.round(pct)}%</span>
+                  )}
                 </div>
-                <div className="progress-bar">
-                  <motion.div className="progress-fill" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2 }} style={{ background: 'var(--grad-emerald)' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-                  <p style={{ fontSize: 10, color: 'var(--clr-emerald)', fontWeight: 600 }}>{fmt(goal.currentAmount)}</p>
-                  <p style={{ fontSize: 10, color: 'var(--clr-text-3)' }}>of {fmt(goal.targetAmount)}</p>
-                </div>
+                {acc.targetAmount > 0 ? (
+                  <>
+                    <div className="progress-bar">
+                      <motion.div className="progress-fill" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2 }} style={{ background: 'var(--grad-emerald)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
+                      <p style={{ fontSize: 10, color: 'var(--clr-emerald)', fontWeight: 600 }}>{fmt(acc.currentBalance)}</p>
+                      <p style={{ fontSize: 10, color: 'var(--clr-text-3)' }}>of {fmt(acc.targetAmount)}</p>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-emerald)' }}>{fmtFull(acc.currentBalance)}</p>
+                    <span style={{ fontSize: 10, color: 'var(--clr-text-3)', fontStyle: 'italic' }}>Flexible Savings</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -405,7 +413,7 @@ export default function Dashboard() {
       )}
 
       {/* Empty state */}
-      {goals.length === 0 && recentExpenses.length === 0 && (
+      {savingsAccounts.length === 0 && recentExpenses.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

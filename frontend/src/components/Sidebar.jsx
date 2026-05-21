@@ -16,7 +16,6 @@ const FINANCE_NAV = [
   { name: 'Income',    path: '/income',    icon: Wallet },
   { name: 'Budgets',   path: '/budgets',   icon: PieChart },
   { name: 'Expenses',  path: '/expenses',  icon: Receipt },
-  { name: 'Savings',   path: '/savings',   icon: PiggyBank },
 ];
 
 function NavItem({ item }) {

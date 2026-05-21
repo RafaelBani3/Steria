@@ -33,8 +33,7 @@ model User {
   budgetCategories    BudgetCategory[]
   budgetItems         BudgetItem[]
   expenses            Expense[]
-  savingsGoals        SavingsGoal[]
-  savingsTransactions SavingsTransaction[]
+  transfers           Transfer[]
   notifications       Notification[]
 }
 
@@ -49,6 +48,7 @@ model Account {
   providerName     String   // e.g. "BCA", "OVO", "Cash"
   providerCategory String   // "BANK" | "E_WALLET" | "CASH" | "OTHER"
   currentBalance   Float    @default(0)
+  targetAmount     Float?
   color            String?  // hex color for UI
   icon             String?  // emoji or url
   isActive         Boolean  @default(true)
@@ -60,9 +60,8 @@ model Account {
   budgetItemsAsSource      BudgetItem[]         @relation("SourceBudgetItems")
   budgetItemsAsDestination BudgetItem[]         @relation("DestinationBudgetItems")
   expenses                 Expense[]
-  savingsGoals             SavingsGoal[]
-  outgoingSavingsTransactions SavingsTransaction[] @relation("SourceAccount")
-  incomingSavingsTransactions SavingsTransaction[] @relation("DestinationAccount")
+  outgoingTransfers        Transfer[]           @relation("OutgoingTransfers")
+  incomingTransfers        Transfer[]           @relation("IncomingTransfers")
 }
 
 // ─────────────────────────────────────────────
@@ -143,42 +142,22 @@ model Expense {
 }
 
 // ─────────────────────────────────────────────
-// SAVINGS GOALS
+// TRANSFERS (Transfer: Cashflow <-> Savings)
 // ─────────────────────────────────────────────
-model SavingsGoal {
-  id                String   @id @default(uuid())
-  userId            String
-  savingsAccountId  String
-  goalName          String
-  targetAmount      Float
-  currentAmount     Float    @default(0)
-  targetDate        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model Transfer {
+  id              String   @id @default(uuid())
+  userId          String
+  fromAccountId   String
+  toAccountId     String
+  amount          Float
+  transferType    String   // "ADD_FUNDS" | "WITHDRAW"
+  notes           String?
+  transactionDate DateTime @default(now())
+  createdAt       DateTime @default(now())
 
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  savingsAccount Account              @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
-  transactions   SavingsTransaction[]
-}
-
-// ─────────────────────────────────────────────
-// SAVINGS TRANSACTIONS (Transfer: Cashflow → Savings)
-// ─────────────────────────────────────────────
-model SavingsTransaction {
-  id                          String   @id @default(uuid())
-  userId                      String
-  sourceAccountId             String
-  destinationSavingsAccountId String
-  savingsGoalId               String?
-  amount                      Float
-  transactionDate             DateTime
-  notes                       String?
-  createdAt                   DateTime @default(now())
-
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceAccount      Account      @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Cascade)
-  destinationAccount Account      @relation("DestinationAccount", fields: [destinationSavingsAccountId], references: [id], onDelete: Cascade)
-  savingsGoal        SavingsGoal? @relation(fields: [savingsGoalId], references: [id])
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount Account @relation("OutgoingTransfers", fields: [fromAccountId], references: [id], onDelete: Cascade)
+  toAccount   Account @relation("IncomingTransfers", fields: [toAccountId], references: [id], onDelete: Cascade)
 }
 
 // ─────────────────────────────────────────────

@@ -79,4 +79,19 @@ export const useAccountStore = create((set, get) => ({
       throw err;
     }
   },
+
+  isLoadingAction: false,
+  createTransfer: async (data) => {
+    set({ isLoadingAction: true });
+    try {
+      const res = await api.post('/transfers', data);
+      await get().fetchAccounts();
+      return res.data;
+    } catch (err) {
+      console.error('createTransfer error:', err);
+      throw err;
+    } finally {
+      set({ isLoadingAction: false });
+    }
+  },
 }));

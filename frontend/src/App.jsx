@@ -5,7 +5,6 @@ import Accounts from './pages/Accounts';
 import IncomeManagement from './pages/IncomeManagement';
 import BudgetManagement from './pages/BudgetManagement';
 import ExpenseTracking from './pages/ExpenseTracking';
-import SavingsTracker from './pages/SavingsTracker';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifySuccess from './pages/VerifySuccess';
@@ -54,7 +53,7 @@ function App() {
           <Route path="income" element={<IncomeManagement />} />
           <Route path="budgets" element={<BudgetManagement />} />
           <Route path="expenses" element={<ExpenseTracking />} />
-          <Route path="savings" element={<SavingsTracker />} />
+          <Route path="savings" element={<Navigate to="/accounts" replace />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="analytics" element={<Analytics />} />

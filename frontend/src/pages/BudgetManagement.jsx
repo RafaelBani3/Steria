@@ -57,11 +57,11 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
             {isOver && <span className="badge badge-rose" style={{ fontSize: 9 }}>OVER</span>}
             {isWarning && <span className="badge badge-amber" style={{ fontSize: 9 }}>80%</span>}
           </div>
-          
+
           {item.account && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--clr-text-3)' }}>
               <span>{item.account.icon || '💳'}</span>
-              <span style={{ fontWeight: 500 }}>{item.account.providerName}</span>
+              <span style={{ fontWeight: 500 }}>Terhubung: {item.account.accountName} ({item.account.providerName})</span>
             </div>
           )}
         </div>
@@ -100,7 +100,7 @@ const BudgetItemRow = memo(function BudgetItemRow({ item, onEdit, onDelete }) {
             {isOver ? `Over ${formatRp(item.usedAmount - item.allocatedAmount)}` : `${Math.round(usagePct)}%`}
           </span>
         </div>
-        
+
         <div className="progress-bar" style={{ height: 6, background: 'rgba(15,23,42,0.06)' }}>
           <motion.div
             className="progress-fill"
@@ -208,14 +208,14 @@ const CategorySection = memo(function CategorySection({ category, items, totalIn
 export default function BudgetManagement() {
   const { categories, budgetItems, fetchCategories, fetchBudgetItems, createBudgetItem, updateBudgetItem, deleteBudgetItem, getTotals } = useBudgetStore();
   const { cashflowAccounts, savingsAccounts, fetchAccounts } = useAccountStore();
-  const { incomes, fetchIncomes, getTotalIncome } = useIncomeStore();
+  const { fetchIncomes, getTotalIncome } = useIncomeStore();
 
   const now = new Date();
   const [showAddItem, setShowAddItem] = useState(false);
   const [showEditItem, setShowEditItem] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [targetCategory, setTargetCategory] = useState(null);
-  const [form, setForm] = useState({ itemName: '', allocatedAmount: '', sourceAccountId: '', accountId: '', color: '#7C3AED' });
+  const [form, setForm] = useState({ itemName: '', allocatedAmount: '', accountId: '', color: '#7C3AED' });
 
   // Allocation rule state
   const [selectedPreset, setSelectedPreset] = useState(() => {
@@ -272,8 +272,7 @@ export default function BudgetManagement() {
     const defaultAccountId = isSavings
       ? (savingsAccounts[0]?.id || '')
       : (cashflowAccounts[0]?.id || '');
-    const defaultSourceId = cashflowAccounts.find(acc => acc.currentBalance > 0)?.id || '';
-    setForm({ itemName: '', allocatedAmount: '', sourceAccountId: defaultSourceId, accountId: defaultAccountId, color: '#7C3AED' });
+    setForm({ itemName: '', allocatedAmount: '', accountId: defaultAccountId, color: '#7C3AED' });
     setShowAddItem(true);
   }, [savingsAccounts, cashflowAccounts]);
 
@@ -283,7 +282,6 @@ export default function BudgetManagement() {
     setForm({
       itemName: item.itemName,
       allocatedAmount: formatNumberInput(String(item.allocatedAmount)),
-      sourceAccountId: item.sourceAccountId || '',
       accountId: item.accountId || '',
       color: item.color || '#7C3AED'
     });
@@ -295,25 +293,15 @@ export default function BudgetManagement() {
     if (!targetCategory || !form.itemName || !form.allocatedAmount) { toast.error('Please fill all fields'); return; }
 
     const amount = parseNumberInput(form.allocatedAmount);
-    if (form.sourceAccountId) {
-      const srcAcc = cashflowAccounts.find(acc => acc.id === form.sourceAccountId);
-      if (srcAcc && srcAcc.currentBalance < amount) {
-        toast.error(`Saldo tidak mencukupi di ${srcAcc.accountName}. Saldo saat ini: ${formatRp(srcAcc.currentBalance)}`);
-        return;
-      }
-    }
-
     setIsSubmitting(true);
     try {
       await createBudgetItem({
         categoryId: targetCategory.id,
-        sourceAccountId: form.sourceAccountId || null,
         accountId: form.accountId || null,
         itemName: form.itemName,
         allocatedAmount: amount,
         color: form.color,
       });
-      // Refresh accounts to show updated balances
       fetchAccounts();
       toast.success(`"${form.itemName}" added to ${targetCategory.categoryName}! 📊`);
       setShowAddItem(false);
@@ -330,39 +318,14 @@ export default function BudgetManagement() {
     if (!editingItem || !form.itemName || !form.allocatedAmount) { toast.error('Please fill all fields'); return; }
 
     const amount = parseNumberInput(form.allocatedAmount);
-    const newSourceId = form.sourceAccountId;
-
-    if (newSourceId) {
-      if (editingItem.sourceAccountId === newSourceId) {
-        // Same source, check difference
-        const netDeduction = amount - editingItem.allocatedAmount;
-        if (netDeduction > 0) {
-          const srcAcc = cashflowAccounts.find(acc => acc.id === newSourceId);
-          if (srcAcc && srcAcc.currentBalance < netDeduction) {
-            toast.error(`Saldo tidak mencukupi di ${srcAcc.accountName}. Kekurangan: ${formatRp(netDeduction - srcAcc.currentBalance)}`);
-            return;
-          }
-        }
-      } else {
-        // Different source, check full amount
-        const srcAcc = cashflowAccounts.find(acc => acc.id === newSourceId);
-        if (srcAcc && srcAcc.currentBalance < amount) {
-          toast.error(`Saldo tidak mencukupi di ${srcAcc.accountName}. Saldo saat ini: ${formatRp(srcAcc.currentBalance)}`);
-          return;
-        }
-      }
-    }
-
     setIsSubmitting(true);
     try {
       await updateBudgetItem(editingItem.id, {
         itemName: form.itemName,
         allocatedAmount: amount,
-        sourceAccountId: form.sourceAccountId || null,
         accountId: form.accountId || null,
         color: form.color,
       });
-      // Refresh accounts to show updated balances
       fetchAccounts();
       toast.success(`"${form.itemName}" updated successfully! 📊`);
       setShowEditItem(false);
@@ -379,7 +342,7 @@ export default function BudgetManagement() {
     if (!confirm('Delete this budget item?')) return;
     try {
       await deleteBudgetItem(itemId);
-      fetchAccounts(); // refresh balances after reversal
+      fetchAccounts();
       toast.success('Budget item removed');
     } catch {
       toast.error('Failed to delete');
@@ -512,10 +475,10 @@ export default function BudgetManagement() {
             {formatRp(totalIncome - totalAllocated)}
           </p>
           <p style={{ fontSize: 9, color: 'var(--clr-text-3)', fontWeight: 600, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-            {(totalIncome - totalAllocated) === 0 
-              ? '✅ Dana Tersalurkan Semua' 
-              : (totalIncome - totalAllocated) < 0 
-                ? '⚠️ Alokasi Melebihi Income' 
+            {(totalIncome - totalAllocated) === 0
+              ? '✅ Dana Tersalurkan Semua'
+              : (totalIncome - totalAllocated) < 0
+                ? '⚠️ Alokasi Melebihi Income'
                 : '⚠️ Masih ada yang belum dialokasi'}
           </p>
         </div>
@@ -534,9 +497,8 @@ export default function BudgetManagement() {
             <Sliders size={15} style={{ color: 'var(--clr-violet)' }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--clr-text)' }}>Aturan Alokasi Dana</span>
           </div>
-          
+
           <div style={{ position: 'relative' }}>
-            {/* Dropdown Toggle Button */}
             <button
               type="button"
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -564,12 +526,10 @@ export default function BudgetManagement() {
               <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--clr-text-3)' }} />
             </button>
 
-            {/* Dropdown Options List */}
             <AnimatePresence>
               {dropdownOpen && (
                 <>
-                  {/* Invisible overlay to close dropdown on click outside */}
-                  <div 
+                  <div
                     onClick={() => setDropdownOpen(false)}
                     style={{ position: 'fixed', inset: 0, zIndex: 998 }}
                   />
@@ -787,49 +747,14 @@ export default function BudgetManagement() {
                   )}
                 </div>
 
-                {/* Source Account (always cashflow — where money comes FROM) */}
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
-                    📤 Source Account <span style={{ color: 'var(--clr-text-3)', fontWeight: 400 }}>(uang dari mana)</span>
-                  </label>
-                  {cashflowAccounts.filter((acc) => acc.currentBalance > 0).length === 0 ? (
-                    <div style={{ padding: '10px 12px', background: 'rgba(244,63,94,0.08)', borderRadius: 10, border: '1px solid rgba(244,63,94,0.2)', fontSize: 12, color: 'var(--clr-rose)' }}>
-                      ⚠️ Tidak ada akun yang memiliki saldo. Harap isi saldo atau buat income terlebih dahulu.
-                    </div>
-                  ) : (
-                    <select
-                      className="input-dark"
-                      value={form.sourceAccountId}
-                      onChange={(e) => setForm((f) => ({ ...f, sourceAccountId: e.target.value }))}
-                      required
-                    >
-                      <option value="">— Pilih sumber dana —</option>
-                      {cashflowAccounts
-                        .filter((acc) => acc.currentBalance > 0)
-                        .map((acc) => (
-                          <option key={acc.id} value={acc.id}>
-                            {acc.icon || '💳'} {acc.accountName} (Saldo: {formatRp(acc.currentBalance)})
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Visual arrow indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--clr-text-3)', fontSize: 12 }}>
-                  <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-                  <span>↓ dialokasikan ke</span>
-                  <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-                </div>
-
-                {/* Destination Account */}
+                {/* Destination Account (Target Rekening) */}
                 <div>
                   {(() => {
                     const isSavings = targetCategory?.categoryName === 'Savings';
                     const accountList = isSavings ? savingsAccounts : cashflowAccounts;
-                    const labelText = isSavings ? '📥 Destination — Tabungan Tujuan' : '📥 Destination Account';
+                    const labelText = '🎯 Target Rekening / Linked Account (Opsional)';
                     const emptyIcon = isSavings ? '💰' : '💳';
-                    const anyLabel = isSavings ? '— Pilih tabungan tujuan —' : '— Pilih akun tujuan —';
+                    const anyLabel = isSavings ? '— Hubungkan ke Tabungan (Opsional) —' : '— Hubungkan ke Akun (Opsional) —';
                     return (
                       <>
                         <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
@@ -852,15 +777,12 @@ export default function BudgetManagement() {
                           </select>
                         )}
                         <p style={{ fontSize: 10, color: 'var(--clr-text-3)', marginTop: 5, lineHeight: 1.4 }}>
-                          💡 {isSavings
-                            ? 'Dana langsung masuk ke rekening tabungan ini saat budget dibuat.'
-                            : 'Dana dialokasikan ke akun ini. Expense akan memotong saldo akun ini.'}
+                          💡 Hubungkan budget item ini untuk memantau pengeluaran atau target tabungan Anda secara real-time.
                         </p>
                       </>
                     );
                   })()}
                 </div>
-
 
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
@@ -887,9 +809,9 @@ export default function BudgetManagement() {
                   <button type="button" onClick={() => setShowAddItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
-                    className="btn-primary" 
+                  <button
+                    type="submit"
+                    className="btn-primary"
                     style={{ flex: 2, justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                     disabled={isSubmitting}
                   >
@@ -968,49 +890,14 @@ export default function BudgetManagement() {
                   )}
                 </div>
 
-                {/* Source Account (always cashflow — where money comes FROM) */}
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
-                    📤 Source Account <span style={{ color: 'var(--clr-text-3)', fontWeight: 400 }}>(uang dari mana)</span>
-                  </label>
-                  {cashflowAccounts.filter((acc) => acc.currentBalance > 0 || acc.id === form.sourceAccountId).length === 0 ? (
-                    <div style={{ padding: '10px 12px', background: 'rgba(244,63,94,0.08)', borderRadius: 10, border: '1px solid rgba(244,63,94,0.2)', fontSize: 12, color: 'var(--clr-rose)' }}>
-                      ⚠️ Tidak ada akun yang memiliki saldo. Harap isi saldo atau buat income terlebih dahulu.
-                    </div>
-                  ) : (
-                    <select
-                      className="input-dark"
-                      value={form.sourceAccountId}
-                      onChange={(e) => setForm((f) => ({ ...f, sourceAccountId: e.target.value }))}
-                      required
-                    >
-                      <option value="">— Pilih sumber dana —</option>
-                      {cashflowAccounts
-                        .filter((acc) => acc.currentBalance > 0 || acc.id === form.sourceAccountId)
-                        .map((acc) => (
-                          <option key={acc.id} value={acc.id}>
-                            {acc.icon || '💳'} {acc.accountName} (Saldo: {formatRp(acc.currentBalance)})
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Visual arrow indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--clr-text-3)', fontSize: 12 }}>
-                  <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-                  <span>↓ dialokasikan ke</span>
-                  <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
-                </div>
-
-                {/* Destination Account */}
+                {/* Destination Account (Target Rekening) */}
                 <div>
                   {(() => {
                     const isSavings = targetCategory?.categoryName === 'Savings';
                     const accountList = isSavings ? savingsAccounts : cashflowAccounts;
-                    const labelText = isSavings ? '📥 Destination — Tabungan Tujuan' : '📥 Destination Account';
+                    const labelText = '🎯 Target Rekening / Linked Account (Opsional)';
                     const emptyIcon = isSavings ? '💰' : '💳';
-                    const anyLabel = isSavings ? '— Pilih tabungan tujuan —' : '— Pilih akun tujuan —';
+                    const anyLabel = isSavings ? '— Hubungkan ke Tabungan (Opsional) —' : '— Hubungkan ke Akun (Opsional) —';
                     return (
                       <>
                         <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
@@ -1033,9 +920,7 @@ export default function BudgetManagement() {
                           </select>
                         )}
                         <p style={{ fontSize: 10, color: 'var(--clr-text-3)', marginTop: 5, lineHeight: 1.4 }}>
-                          💡 {isSavings
-                            ? 'Dana langsung masuk ke rekening tabungan ini saat budget dibuat.'
-                            : 'Dana dialokasikan ke akun ini. Expense akan memotong saldo akun ini.'}
+                          💡 Hubungkan budget item ini untuk memantau pengeluaran atau target tabungan Anda secara real-time.
                         </p>
                       </>
                     );
@@ -1067,9 +952,9 @@ export default function BudgetManagement() {
                   <button type="button" onClick={() => setShowEditItem(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} disabled={isSubmitting}>
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
-                    className="btn-primary" 
+                  <button
+                    type="submit"
+                    className="btn-primary"
                     style={{ flex: 2, justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                     disabled={isSubmitting}
                   >

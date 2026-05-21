@@ -42,6 +42,7 @@ function CreateAccountModal({ onClose, onSuccess }) {
     providerName: '',
     providerCategory: 'BANK',
     currentBalance: '',
+    targetAmount: '',
     color: '#7C3AED',
     icon: '',
   });
@@ -63,7 +64,11 @@ function CreateAccountModal({ onClose, onSuccess }) {
     if (!form.providerName) { toast.error('Please select a provider'); return; }
     setIsLoading(true);
     try {
-      await createAccount({ ...form, currentBalance: parseNumberInput(form.currentBalance) });
+      await createAccount({
+        ...form,
+        currentBalance: parseNumberInput(form.currentBalance),
+        targetAmount: form.accountType === 'SAVINGS' && form.targetAmount ? parseNumberInput(form.targetAmount) : null
+      });
       toast.success(`Account "${form.accountName || form.providerName}" created! 🎉`);
       onSuccess?.();
       onClose();
@@ -176,6 +181,26 @@ function CreateAccountModal({ onClose, onSuccess }) {
             />
           </div>
 
+          {/* Target Amount - SAVINGS only */}
+          {form.accountType === 'SAVINGS' && (
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                Target Tabungan (Rp - Opsional)
+              </label>
+              <input
+                className="input-dark"
+                type="text"
+                inputMode="numeric"
+                placeholder="Target dana (e.g. 10.000.000)"
+                value={form.targetAmount}
+                onChange={(e) => {
+                  const formatted = formatNumberInput(e.target.value);
+                  setForm((f) => ({ ...f, targetAmount: formatted }));
+                }}
+              />
+            </div>
+          )}
+
           {/* Color */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
@@ -230,6 +255,7 @@ function EditAccountModal({ account, onClose, onSuccess }) {
   const [form, setForm] = useState({
     accountName: account.accountName || '',
     currentBalance: formatNumberInput(String(account.currentBalance || 0)),
+    targetAmount: account.targetAmount ? formatNumberInput(String(account.targetAmount)) : '',
     color: account.color || '#7C3AED',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -241,6 +267,7 @@ function EditAccountModal({ account, onClose, onSuccess }) {
       await updateAccount(account.id, {
         accountName: form.accountName,
         currentBalance: parseNumberInput(form.currentBalance),
+        targetAmount: account.accountType === 'SAVINGS' ? parseNumberInput(form.targetAmount) : null,
         color: form.color,
       });
       toast.success(`"${form.accountName}" berhasil diperbarui! ✅`);
@@ -312,6 +339,23 @@ function EditAccountModal({ account, onClose, onSuccess }) {
             />
           </div>
 
+          {/* Target Amount - SAVINGS only */}
+          {account.accountType === 'SAVINGS' && (
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                Target Tabungan (Rp - Opsional)
+              </label>
+              <input
+                className="input-dark"
+                type="text"
+                inputMode="numeric"
+                placeholder="Target dana (e.g. 10.000.000)"
+                value={form.targetAmount}
+                onChange={(e) => setForm((f) => ({ ...f, targetAmount: formatNumberInput(e.target.value) }))}
+              />
+            </div>
+          )}
+
           {/* Color */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
@@ -338,6 +382,164 @@ function EditAccountModal({ account, onClose, onSuccess }) {
             <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }} disabled={isLoading}>
               <Check size={14} />
               {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Transfer Modal (Add Funds / Withdraw) ──────────────────────────────────
+function TransferModal({ mode, account, onClose, onSuccess }) {
+  const { cashflowAccounts, createTransfer } = useAccountStore();
+  const [form, setForm] = useState({
+    amount: '',
+    linkedAccountId: '',
+    notes: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (cashflowAccounts.length > 0) {
+      setForm(f => ({ ...f, linkedAccountId: cashflowAccounts[0].id }));
+    }
+  }, [cashflowAccounts]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const amountVal = parseNumberInput(form.amount);
+    if (!amountVal || amountVal <= 0) {
+      toast.error('Masukkan nominal transfer yang valid');
+      return;
+    }
+    if (!form.linkedAccountId) {
+      toast.error('Silakan pilih akun Cashflow');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (mode === 'ADD_FUNDS') {
+        await createTransfer({
+          fromAccountId: form.linkedAccountId,
+          toAccountId: account.id,
+          amount: amountVal,
+          transferType: 'ADD_FUNDS',
+          notes: form.notes,
+        });
+        toast.success(`Berhasil menyimpan ${formatRp(amountVal)} ke ${account.accountName}! 🎉`);
+      } else {
+        await createTransfer({
+          fromAccountId: account.id,
+          toAccountId: form.linkedAccountId,
+          amount: amountVal,
+          transferType: 'WITHDRAW',
+          notes: form.notes,
+        });
+        toast.success(`Berhasil menarik ${formatRp(amountVal)} dari ${account.accountName}! ✅`);
+      }
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal melakukan transaksi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="modal-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        className="modal-card"
+        initial={{ opacity: 0, scale: 0.94, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 20 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--clr-text)' }}>
+              {mode === 'ADD_FUNDS' ? 'Simpan Tabungan' : 'Tarik Tabungan'}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--clr-text-3)', marginTop: 2 }}>
+              {account.accountName} ({account.providerName})
+            </p>
+          </div>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: 8, borderRadius: 10 }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Linked Cashflow Account */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+              {mode === 'ADD_FUNDS' ? 'Sumber Rekening (Cashflow)' : 'Tujuan Rekening (Cashflow)'}
+            </label>
+            <select
+              className="input-dark"
+              value={form.linkedAccountId}
+              onChange={(e) => setForm(f => ({ ...f, linkedAccountId: e.target.value }))}
+              required
+            >
+              <option value="" disabled>Pilih akun Cashflow</option>
+              {cashflowAccounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.icon} {acc.accountName} ({acc.providerName}) - Saldo: {formatRp(acc.currentBalance)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+              Nominal (Rp)
+            </label>
+            <input
+              className="input-dark"
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={form.amount}
+              onChange={(e) => setForm(f => ({ ...f, amount: formatNumberInput(e.target.value) }))}
+              style={{ fontSize: 20, fontWeight: 700 }}
+              required
+              autoFocus
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+              Catatan (Opsional)
+            </label>
+            <input
+              className="input-dark"
+              type="text"
+              placeholder="e.g. Nabung bulanan, Keperluan darurat"
+              value={form.notes}
+              onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            <button type="button" onClick={onClose} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
+            <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center', background: mode === 'ADD_FUNDS' ? 'var(--clr-emerald)' : 'var(--clr-purple-mid)' }} disabled={isLoading}>
+              {isLoading ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+                  <RefreshCw size={14} />
+                </motion.div>
+              ) : (
+                mode === 'ADD_FUNDS' ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />
+              )}
+              {isLoading ? 'Memproses...' : mode === 'ADD_FUNDS' ? 'Simpan Dana' : 'Tarik Dana'}
             </button>
           </div>
         </form>
@@ -401,36 +603,15 @@ function AccountDetailsModal({ account, onClose }) {
       icon: <Receipt size={16} />,
       sign: '-'
     },
-    ALLOCATION_OUT: {
-      label: 'Alokasi Keluar (Budget)',
+    TRANSFER_OUT: {
+      label: 'Transfer Keluar',
       color: 'var(--clr-amber)',
       bg: 'rgba(245,158,11,0.12)',
       icon: <ArrowUpRight size={16} />,
       sign: '-'
     },
-    ALLOCATION_IN: {
-      label: 'Terima Alokasi (Budget)',
-      color: 'var(--clr-cyan)',
-      bg: 'rgba(6,182,212,0.12)',
-      icon: <ArrowDownLeft size={16} />,
-      sign: '+'
-    },
-    SAVINGS_ALLOCATION_INTERNAL: {
-      label: 'Dialokasikan ke Goal',
-      color: 'var(--clr-emerald)',
-      bg: 'rgba(16,185,129,0.12)',
-      icon: <Target size={16} />,
-      sign: ''
-    },
-    SAVINGS_TRANSFER_OUT: {
-      label: 'Transfer Keluar (Savings)',
-      color: 'var(--clr-amber)',
-      bg: 'rgba(245,158,11,0.12)',
-      icon: <ArrowUpRight size={16} />,
-      sign: '-'
-    },
-    SAVINGS_TRANSFER_IN: {
-      label: 'Terima Transfer (Savings)',
+    TRANSFER_IN: {
+      label: 'Transfer Masuk',
       color: 'var(--clr-cyan)',
       bg: 'rgba(6,182,212,0.12)',
       icon: <ArrowDownLeft size={16} />,
@@ -440,7 +621,7 @@ function AccountDetailsModal({ account, onClose }) {
 
   const totalTransactions = selectedAccountHistory?.length || 0;
   const totalExpenses = (selectedAccountHistory || [])
-    .filter(tx => tx.type === 'EXPENSE' || tx.type === 'ALLOCATION_OUT')
+    .filter(tx => tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT')
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   return (
@@ -576,8 +757,9 @@ export default function Accounts() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
+  const [transferState, setTransferState] = useState(null); // { mode: 'ADD_FUNDS' | 'WITHDRAW', account }
+  const [fetchingHistoryId, setFetchingHistoryId] = useState(null);
   const [activeTab, setActiveTab] = useState('accounts'); // 'accounts' | 'income'
 
   useEffect(() => {
@@ -591,6 +773,18 @@ export default function Accounts() {
       toast.success('Account removed');
     } catch {
       toast.error('Failed to remove account');
+    }
+  };
+
+  const handleViewDetails = async (account) => {
+    setFetchingHistoryId(account.id);
+    try {
+      await useAccountStore.getState().fetchAccountHistory(account.id);
+      setDetailsTarget(account);
+    } catch (err) {
+      toast.error('Failed to load transaction history');
+    } finally {
+      setFetchingHistoryId(null);
     }
   };
 
@@ -736,7 +930,7 @@ export default function Accounts() {
 
       {/* Cashflow Accounts */}
       {cashflowAccounts.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div className="badge badge-cyan">💳 Cashflow Accounts</div>
@@ -755,9 +949,27 @@ export default function Accounts() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
                 className="glass"
-                style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 16, marginBottom: 8, cursor: 'pointer' }}
-                onClick={() => setDetailsTarget(account)}
+                style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 16, marginBottom: 8, cursor: 'pointer', position: 'relative' }}
+                onClick={() => handleViewDetails(account)}
               >
+                {/* Loader Overlay */}
+                {fetchingHistoryId === account.id && (
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    borderRadius: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                  }}>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ color: 'var(--clr-cyan)' }}>
+                      <RefreshCw size={18} />
+                    </motion.div>
+                  </div>
+                )}
+
                 <div
                   style={{
                     width: 46, height: 46, borderRadius: 14, flexShrink: 0,
@@ -787,9 +999,9 @@ export default function Accounts() {
                     </p>
                   )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setEditTarget(account); }}
+                    onClick={() => setEditTarget(account)}
                     style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-cyan)'}
                     onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
@@ -798,7 +1010,7 @@ export default function Accounts() {
                     <Pencil size={14} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(account); }}
+                    onClick={() => handleDelete(account)}
                     style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
                     onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
@@ -815,71 +1027,196 @@ export default function Accounts() {
 
       {/* Savings Accounts */}
       {savingsAccounts.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div className="badge badge-emerald">💰 Savings Accounts</div>
+            <div className="badge badge-emerald">💰 Savings & Goal Accounts</div>
             <span style={{ fontSize: 12, color: 'var(--clr-emerald)', fontWeight: 600 }}>
               {formatRp(totalSavings)}
             </span>
           </div>
 
-          <div className="accounts-list-mobile">
-            {savingsAccounts.map((account, i) => (
-              <motion.div
-                key={account.id}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="glass"
-                style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 16, marginBottom: 8, cursor: 'pointer' }}
-                onClick={() => setDetailsTarget(account)}
-              >
-                <div
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {savingsAccounts.map((account, i) => {
+              const hasTarget = account.targetAmount && account.targetAmount > 0;
+              const progressPct = hasTarget ? Math.min(100, (account.currentBalance / account.targetAmount) * 100) : 0;
+
+              return (
+                <motion.div
+                  key={account.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="glass"
                   style={{
-                    width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-                    background: 'rgba(16,185,129,0.15)',
-                    border: '1px solid rgba(16,185,129,0.25)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22,
+                    padding: '20px',
+                    borderRadius: 20,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    border: '1px solid rgba(16,185,129,0.2)',
+                    background: 'linear-gradient(145deg, rgba(16,185,129,0.02) 0%, rgba(10,14,30,0.6) 100%)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: 180,
                   }}
+                  onClick={() => handleViewDetails(account)}
                 >
-                  {account.icon || '💰'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)', marginBottom: 2 }}>
-                    {account.providerName}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
-                    {account.accountName} {account.accountNumber ? `· ···· ${account.accountNumber.slice(-4)}` : ''}
-                  </p>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-emerald)' }}>
-                    {formatRp(account.currentBalance)}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setEditTarget(account); }}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-emerald)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
-                    title="Edit account"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(account); }}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
-                    title="Delete account"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+                  {/* Card Spinner Loader */}
+                  {fetchingHistoryId === account.id && (
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.6)',
+                      borderRadius: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 10,
+                    }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ color: 'var(--clr-emerald)' }}>
+                        <RefreshCw size={20} />
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {/* Top: Icon & Type */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div
+                          style={{
+                            width: 44, height: 44, borderRadius: 12,
+                            background: `${account.color || '#10B981'}20`,
+                            border: `1px solid ${account.color || '#10B981'}35`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 22,
+                          }}
+                        >
+                          {account.icon || '💰'}
+                        </div>
+                        <div>
+                          <h4 style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)', marginBottom: 2 }}>
+                            {account.accountName}
+                          </h4>
+                          <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
+                            {account.providerName}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Edit / Delete */}
+                      <div style={{ display: 'flex', gap: 2 }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setEditTarget(account)}
+                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'color 0.2s' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-emerald)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(account)}
+                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'color 0.2s' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Middle: Balances */}
+                    <div style={{ marginBottom: 12 }}>
+                      <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+                        Saldo Tabungan
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                        <span className="font-display" style={{ fontSize: 22, fontWeight: 800, color: 'var(--clr-emerald)' }}>
+                          {formatRp(account.currentBalance)}
+                        </span>
+                        {hasTarget && (
+                          <span style={{ fontSize: 12, color: 'var(--clr-text-3)' }}>
+                            / {formatRp(account.targetAmount)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {hasTarget && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>Progress Tabungan</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-emerald)' }}>{Math.round(progressPct)}%</span>
+                        </div>
+                        <div className="progress-bar" style={{ height: 6, background: 'rgba(255,255,255,0.05)' }}>
+                          <motion.div
+                            className="progress-fill"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPct}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            style={{ background: 'var(--grad-emerald)', boxShadow: '0 0 8px rgba(16,185,129,0.3)' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bottom: Action Buttons */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setTransferState({ mode: 'ADD_FUNDS', account })}
+                      className="btn-primary"
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        fontSize: 12,
+                        borderRadius: 10,
+                        justifyContent: 'center',
+                        gap: 4,
+                        background: 'rgba(16,185,129,0.12)',
+                        border: '1px solid rgba(16,185,129,0.3)',
+                        color: 'var(--clr-emerald)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(16,185,129,0.2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(16,185,129,0.12)';
+                      }}
+                    >
+                      <ArrowUpRight size={13} />
+                      Simpan Dana
+                    </button>
+                    <button
+                      onClick={() => setTransferState({ mode: 'WITHDRAW', account })}
+                      className="btn-ghost"
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        fontSize: 12,
+                        borderRadius: 10,
+                        justifyContent: 'center',
+                        gap: 4,
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid var(--glass-border)',
+                        color: 'var(--clr-text-2)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      }}
+                    >
+                      <ArrowDownLeft size={13} />
+                      Tarik Dana
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -984,7 +1321,7 @@ export default function Accounts() {
         <IncomeManagement />
       )}
 
-      {/* Create Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showCreate && (
           <CreateAccountModal
@@ -1003,6 +1340,14 @@ export default function Accounts() {
           <AccountDetailsModal
             account={detailsTarget}
             onClose={() => setDetailsTarget(null)}
+          />
+        )}
+        {transferState && (
+          <TransferModal
+            mode={transferState.mode}
+            account={transferState.account}
+            onClose={() => setTransferState(null)}
+            onSuccess={fetchAccounts}
           />
         )}
       </AnimatePresence>

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 const TABS = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { path: '/accounts',  icon: CreditCard,      label: 'Accounts' },
-  { path: '/savings',   icon: PiggyBank,        label: 'Savings' },
   { path: '/budgets',   icon: PieChart,         label: 'Budgets' },
   { path: '/expenses',  icon: Receipt,          label: 'Expenses' },
 ];
