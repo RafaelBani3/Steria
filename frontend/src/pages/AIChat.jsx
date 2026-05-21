@@ -70,7 +70,7 @@ export default function AIChat() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 14.5rem)', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', gap: 12 }}>
 
       {/* ── Header ──────────────────────────────── */}
       <motion.div
@@ -324,6 +324,20 @@ export default function AIChat() {
               lineHeight: 1.5,
             }}
           />
+          <button
+            type="button"
+            title="Voice Input (Coming soon)"
+            style={{
+              width: 32, height: 40, borderRadius: 12, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 200ms ease',
+            }}
+          >
+            <Mic size={18} color="var(--clr-text-3)" strokeWidth={2.2} />
+          </button>
           <button
             type="submit"
             disabled={!input.trim() || isTyping}
