@@ -7,7 +7,7 @@ import incomeRoutes from '../backend/src/routes/income.routes.js';
 import budgetCategoryRoutes from '../backend/src/routes/budget.category.routes.js';
 import budgetItemRoutes from '../backend/src/routes/budget.item.routes.js';
 import expenseRoutes from '../backend/src/routes/expense.routes.js';
-import savingRoutes from '../backend/src/routes/saving.routes.js';
+import transferRoutes from '../backend/src/routes/transfer.routes.js';
 import notificationRoutes from '../backend/src/routes/notification.routes.js';
 import aiRoutes from '../backend/src/ai/ai.routes.js';
 
@@ -44,26 +44,6 @@ app.get('/api', (req, res) => {
   res.json({ status: 'Steria API is running' });
 });
 
-import prisma from '../backend/src/prisma/index.js';
-app.get('/api/diagnose', async (req, res) => {
-  try {
-    const dbUrl = process.env.DATABASE_URL || 'not set';
-    const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
-    const userCount = await prisma.user.count();
-    res.json({
-      status: 'success',
-      database_url: maskedUrl,
-      userCount,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message,
-      stack: error.stack,
-    });
-  }
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -72,7 +52,7 @@ app.use('/api/income', incomeRoutes);
 app.use('/api/budget-categories', budgetCategoryRoutes);
 app.use('/api/budget-items', budgetItemRoutes);
 app.use('/api/expenses', expenseRoutes);
-app.use('/api/savings', savingRoutes);
+app.use('/api/transfers', transferRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 
