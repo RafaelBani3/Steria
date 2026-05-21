@@ -406,6 +406,12 @@ function TransferModal({ mode, account, onClose, onSuccess }) {
     }
   }, [cashflowAccounts]);
 
+  const selectedCashflow = cashflowAccounts.find(acc => acc.id === form.linkedAccountId);
+  const amountVal = parseNumberInput(form.amount) || 0;
+  const isInsufficient = mode === 'ADD_FUNDS'
+    ? (selectedCashflow ? amountVal > selectedCashflow.currentBalance : false)
+    : amountVal > account.currentBalance;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const amountVal = parseNumberInput(form.amount);
@@ -415,6 +421,15 @@ function TransferModal({ mode, account, onClose, onSuccess }) {
     }
     if (!form.linkedAccountId) {
       toast.error('Silakan pilih akun Cashflow');
+      return;
+    }
+
+    if (isInsufficient) {
+      if (mode === 'ADD_FUNDS') {
+        toast.error(`Saldo tidak mencukupi di akun ${selectedCashflow?.accountName || 'Cashflow'}. Saldo saat ini: ${formatRp(selectedCashflow?.currentBalance || 0)}`);
+      } else {
+        toast.error(`Saldo tidak mencukupi di akun ${account.accountName}. Saldo saat ini: ${formatRp(account.currentBalance)}`);
+      }
       return;
     }
 
@@ -509,10 +524,40 @@ function TransferModal({ mode, account, onClose, onSuccess }) {
               placeholder="0"
               value={form.amount}
               onChange={(e) => setForm(f => ({ ...f, amount: formatNumberInput(e.target.value) }))}
-              style={{ fontSize: 20, fontWeight: 700 }}
+              style={{ 
+                fontSize: 20, 
+                fontWeight: 700,
+                borderColor: isInsufficient ? 'var(--clr-rose)' : 'rgba(15,23,42,0.09)',
+                boxShadow: isInsufficient ? '0 0 0 3px var(--clr-rose-glow)' : '0 1px 2px rgba(0,0,0,0.02)',
+                transition: 'all 0.2s',
+              }}
               required
               autoFocus
             />
+            <AnimatePresence>
+              {isInsufficient && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  style={{
+                    background: 'rgba(244, 63, 94, 0.05)',
+                    border: '1px solid rgba(244, 63, 94, 0.15)',
+                    borderRadius: 12,
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <AlertCircle size={14} style={{ color: 'var(--clr-rose)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: 'var(--clr-rose)', fontWeight: 500, lineHeight: 1.3 }}>
+                    Saldo tidak mencukupi. Saldo tersedia: {mode === 'ADD_FUNDS' ? formatRp(selectedCashflow?.currentBalance || 0) : formatRp(account.currentBalance)}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Notes */}
@@ -531,15 +576,30 @@ function TransferModal({ mode, account, onClose, onSuccess }) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button type="button" onClick={onClose} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
-            <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center', background: mode === 'ADD_FUNDS' ? 'var(--clr-emerald)' : 'var(--clr-purple-mid)' }} disabled={isLoading}>
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              style={{ 
+                flex: 2, 
+                justifyContent: 'center', 
+                background: isInsufficient 
+                  ? 'var(--clr-rose-glow)' 
+                  : (mode === 'ADD_FUNDS' ? 'var(--clr-emerald)' : 'var(--clr-purple-mid)'),
+                color: isInsufficient ? 'var(--clr-rose)' : '#fff',
+                border: isInsufficient ? '1px solid rgba(244, 63, 94, 0.2)' : 'none',
+                cursor: isInsufficient ? 'not-allowed' : 'pointer',
+                boxShadow: isInsufficient ? 'none' : (mode === 'ADD_FUNDS' ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'none')
+              }} 
+              disabled={isLoading || isInsufficient}
+            >
               {isLoading ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
                   <RefreshCw size={14} />
                 </motion.div>
               ) : (
-                mode === 'ADD_FUNDS' ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />
+                isInsufficient ? <AlertCircle size={14} /> : (mode === 'ADD_FUNDS' ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />)
               )}
-              {isLoading ? 'Memproses...' : mode === 'ADD_FUNDS' ? 'Simpan Dana' : 'Tarik Dana'}
+              {isLoading ? 'Memproses...' : isInsufficient ? 'Saldo Kurang' : mode === 'ADD_FUNDS' ? 'Simpan Dana' : 'Tarik Dana'}
             </button>
           </div>
         </form>

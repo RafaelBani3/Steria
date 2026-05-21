@@ -27,7 +27,7 @@ export const getAccountWithAnalytics = async (req, res) => {
 
     if (!account) return res.status(404).json({ error: 'Account not found' });
 
-    const [monthlyExpenses, monthlyIncome, transactionCount] = await Promise.all([
+    const [monthlyExpenses, monthlyIncome] = await Promise.all([
       prisma.expense.aggregate({
         where: { accountId, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { amount: true },
@@ -37,9 +37,6 @@ export const getAccountWithAnalytics = async (req, res) => {
         where: { accountId, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
         _sum: { amount: true },
       }),
-      prisma.expense.count({
-        where: { accountId, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
-      }),
     ]);
 
     res.json({
@@ -47,7 +44,7 @@ export const getAccountWithAnalytics = async (req, res) => {
       analytics: {
         monthlyExpenses: monthlyExpenses._sum.amount || 0,
         monthlyIncome: monthlyIncome._sum.amount || 0,
-        transactionCount,
+        transactionCount: monthlyExpenses._count || 0,
       },
     });
   } catch (error) {
@@ -66,28 +63,52 @@ export const getAccountSummary = async (req, res) => {
       where: { userId: req.user.userId, isActive: true },
     });
 
-    const accountsWithStats = await Promise.all(
-      accounts.map(async (account) => {
-        const [expStats, incStats] = await Promise.all([
-          prisma.expense.aggregate({
-            where: { accountId: account.id, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
-            _sum: { amount: true },
-            _count: true,
-          }),
-          prisma.income.aggregate({
-            where: { accountId: account.id, transactionDate: { gte: startOfMonth, lte: endOfMonth } },
-            _sum: { amount: true },
-          }),
-        ]);
+    const [expStats, incStats] = await Promise.all([
+      prisma.expense.groupBy({
+        by: ['accountId'],
+        where: {
+          userId: req.user.userId,
+          transactionDate: { gte: startOfMonth, lte: endOfMonth },
+        },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+      prisma.income.groupBy({
+        by: ['accountId'],
+        where: {
+          userId: req.user.userId,
+          transactionDate: { gte: startOfMonth, lte: endOfMonth },
+        },
+        _sum: { amount: true },
+      }),
+    ]);
 
-        return {
-          ...account,
-          monthlyExpenses: expStats._sum.amount || 0,
-          monthlyIncome: incStats._sum.amount || 0,
-          transactionCount: expStats._count || 0,
-        };
-      })
-    );
+    const expenseMap = {};
+    expStats.forEach((item) => {
+      expenseMap[item.accountId] = {
+        amount: item._sum?.amount || 0,
+        count: item._count?.id || 0,
+      };
+    });
+
+    const incomeMap = {};
+    incStats.forEach((item) => {
+      incomeMap[item.accountId] = {
+        amount: item._sum?.amount || 0,
+      };
+    });
+
+    const accountsWithStats = accounts.map((account) => {
+      const exp = expenseMap[account.id] || { amount: 0, count: 0 };
+      const inc = incomeMap[account.id] || { amount: 0 };
+
+      return {
+        ...account,
+        monthlyExpenses: exp.amount,
+        monthlyIncome: inc.amount,
+        transactionCount: exp.count,
+      };
+    });
 
     const cashflowAccounts = accountsWithStats.filter(a => a.accountType === 'CASHFLOW');
     const savingsAccounts = accountsWithStats.filter(a => a.accountType === 'SAVINGS');

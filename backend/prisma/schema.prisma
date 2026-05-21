@@ -62,6 +62,8 @@ model Account {
   expenses                 Expense[]
   outgoingTransfers        Transfer[]           @relation("OutgoingTransfers")
   incomingTransfers        Transfer[]           @relation("IncomingTransfers")
+
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────
@@ -79,6 +81,9 @@ model Income {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
 }
 
 // ─────────────────────────────────────────────
@@ -93,6 +98,8 @@ model BudgetCategory {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   budgetItems BudgetItem[]
   expenses    Expense[]
+
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────
@@ -118,6 +125,11 @@ model BudgetItem {
   sourceAccount Account?       @relation("SourceBudgetItems", fields: [sourceAccountId], references: [id])
   account       Account?       @relation("DestinationBudgetItems", fields: [accountId], references: [id])
   expenses      Expense[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([sourceAccountId])
+  @@index([accountId])
 }
 
 // ─────────────────────────────────────────────
@@ -139,6 +151,11 @@ model Expense {
   account    Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
   budgetItem BudgetItem?     @relation(fields: [budgetItemId], references: [id])
   category   BudgetCategory? @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([budgetItemId])
+  @@index([categoryId])
 }
 
 // ─────────────────────────────────────────────
@@ -158,6 +175,10 @@ model Transfer {
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   fromAccount Account @relation("OutgoingTransfers", fields: [fromAccountId], references: [id], onDelete: Cascade)
   toAccount   Account @relation("IncomingTransfers", fields: [toAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([fromAccountId])
+  @@index([toAccountId])
 }
 
 // ─────────────────────────────────────────────
@@ -174,4 +195,6 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
