@@ -948,8 +948,24 @@ export default function Accounts() {
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="glass"
-                style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 16, marginBottom: 8, cursor: 'pointer', position: 'relative' }}
+                style={{
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  borderRadius: 16,
+                  marginBottom: 8,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  background: 'var(--bg-2)',
+                  border: '1px solid var(--glass-border)',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+                whileHover={{
+                  y: -2,
+                  boxShadow: 'var(--shadow-md)',
+                  borderColor: 'var(--glass-border-strong)',
+                }}
                 onClick={() => handleViewDetails(account)}
               >
                 {/* Loader Overlay */}
@@ -957,12 +973,13 @@ export default function Accounts() {
                   <div style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'rgba(0,0,0,0.6)',
+                    background: 'rgba(255,255,255,0.7)',
                     borderRadius: 16,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     zIndex: 10,
+                    backdropFilter: 'blur(2px)',
                   }}>
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ color: 'var(--clr-cyan)' }}>
                       <RefreshCw size={18} />
@@ -1002,18 +1019,30 @@ export default function Accounts() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => setEditTarget(account)}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-cyan)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--clr-cyan)';
+                      e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--clr-text-3)';
+                      e.currentTarget.style.background = 'none';
+                    }}
                     title="Edit account"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => handleDelete(account)}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--clr-rose)';
+                      e.currentTarget.style.background = 'rgba(244, 63, 94, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--clr-text-3)';
+                      e.currentTarget.style.background = 'none';
+                    }}
                     title="Delete account"
                   >
                     <Trash2 size={14} />
@@ -1046,19 +1075,24 @@ export default function Accounts() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.06 }}
-                  className="glass"
                   style={{
-                    padding: '20px',
-                    borderRadius: 20,
+                    padding: '24px 20px 20px',
+                    borderRadius: 24,
                     cursor: 'pointer',
                     position: 'relative',
-                    border: '1px solid rgba(16,185,129,0.2)',
-                    background: 'linear-gradient(145deg, rgba(16,185,129,0.02) 0%, rgba(10,14,30,0.6) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.12)',
+                    background: 'linear-gradient(135deg, var(--bg-2) 0%, rgba(16, 185, 129, 0.01) 100%)',
+                    boxShadow: '0 8px 30px rgba(16, 185, 129, 0.03), 0 2px 8px rgba(0, 0, 0, 0.01)',
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    minHeight: 180,
+                    minHeight: 200,
+                  }}
+                  whileHover={{
+                    y: -5,
+                    boxShadow: '0 16px 36px rgba(16, 185, 129, 0.08), 0 4px 16px rgba(0, 0, 0, 0.02)',
+                    borderColor: 'rgba(16, 185, 129, 0.28)',
                   }}
                   onClick={() => handleViewDetails(account)}
                 >
@@ -1067,41 +1101,55 @@ export default function Accounts() {
                     <div style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'rgba(0,0,0,0.6)',
-                      borderRadius: 20,
+                      background: 'rgba(255,255,255,0.7)',
+                      borderRadius: 24,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       zIndex: 10,
+                      backdropFilter: 'blur(4px)',
                     }}>
                       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} style={{ color: 'var(--clr-emerald)' }}>
-                        <RefreshCw size={20} />
+                        <RefreshCw size={22} />
                       </motion.div>
                     </div>
                   )}
 
                   {/* Top: Icon & Type */}
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div
                           style={{
-                            width: 44, height: 44, borderRadius: 12,
-                            background: `${account.color || '#10B981'}20`,
-                            border: `1px solid ${account.color || '#10B981'}35`,
+                            width: 44, height: 44, borderRadius: 14,
+                            background: `${account.color || '#10B981'}15`,
+                            border: `1px solid ${account.color || '#10B981'}30`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 22,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                           }}
                         >
                           {account.icon || '💰'}
                         </div>
                         <div>
-                          <h4 style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)', marginBottom: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--clr-emerald)',
+                              background: 'rgba(16, 185, 129, 0.06)',
+                              border: '1px solid rgba(16, 185, 129, 0.12)',
+                              padding: '2px 8px',
+                              borderRadius: 99,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              {account.providerName}
+                            </span>
+                          </div>
+                          <h4 style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)', marginTop: 4 }}>
                             {account.accountName}
                           </h4>
-                          <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
-                            {account.providerName}
-                          </p>
                         </div>
                       </div>
 
@@ -1109,17 +1157,29 @@ export default function Accounts() {
                       <div style={{ display: 'flex', gap: 2 }} onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setEditTarget(account)}
-                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'color 0.2s' }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-emerald)'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'all 0.2s' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--clr-emerald)';
+                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--clr-text-3)';
+                            e.currentTarget.style.background = 'none';
+                          }}
                         >
                           <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => handleDelete(account)}
-                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'color 0.2s' }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--clr-rose)'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--clr-text-3)'}
+                          style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, transition: 'all 0.2s' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--clr-rose)';
+                            e.currentTarget.style.background = 'rgba(244, 63, 94, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--clr-text-3)';
+                            e.currentTarget.style.background = 'none';
+                          }}
                         >
                           <Trash2 size={13} />
                         </button>
@@ -1127,36 +1187,42 @@ export default function Accounts() {
                     </div>
 
                     {/* Middle: Balances */}
-                    <div style={{ marginBottom: 12 }}>
-                      <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 10, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 700, marginBottom: 2 }}>
                         Saldo Tabungan
                       </p>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                        <span className="font-display" style={{ fontSize: 22, fontWeight: 800, color: 'var(--clr-emerald)' }}>
+                        <span className="font-display" style={{ fontSize: 26, fontWeight: 800, color: 'var(--clr-text)' }}>
                           {formatRp(account.currentBalance)}
                         </span>
-                        {hasTarget && (
-                          <span style={{ fontSize: 12, color: 'var(--clr-text-3)' }}>
-                            / {formatRp(account.targetAmount)}
-                          </span>
-                        )}
                       </div>
                     </div>
 
                     {/* Progress Bar */}
                     {hasTarget && (
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <span style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>Progress Tabungan</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-emerald)' }}>{Math.round(progressPct)}%</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, color: 'var(--clr-text-3)', fontWeight: 500 }}>
+                            Target: <span style={{ fontWeight: 600, color: 'var(--clr-text-2)' }}>{formatRp(account.targetAmount)}</span>
+                          </span>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: 'var(--clr-emerald)',
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            padding: '2px 8px',
+                            borderRadius: 6
+                          }}>
+                            {Math.round(progressPct)}%
+                          </span>
                         </div>
-                        <div className="progress-bar" style={{ height: 6, background: 'rgba(255,255,255,0.05)' }}>
+                        <div className="progress-bar" style={{ height: 8, background: 'rgba(15, 23, 42, 0.04)', borderRadius: 99, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.01)' }}>
                           <motion.div
                             className="progress-fill"
                             initial={{ width: 0 }}
                             animate={{ width: `${progressPct}%` }}
                             transition={{ duration: 0.8, ease: 'easeOut' }}
-                            style={{ background: 'var(--grad-emerald)', boxShadow: '0 0 8px rgba(16,185,129,0.3)' }}
+                            style={{ background: 'var(--grad-emerald)', boxShadow: '0 0 10px rgba(16,185,129,0.25)' }}
                           />
                         </div>
                       </div>
@@ -1164,29 +1230,34 @@ export default function Accounts() {
                   </div>
 
                   {/* Bottom: Action Buttons */}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setTransferState({ mode: 'ADD_FUNDS', account })}
                       className="btn-primary"
                       style={{
                         flex: 1,
-                        padding: '8px 10px',
+                        padding: '10px 14px',
                         fontSize: 12,
-                        borderRadius: 10,
+                        fontWeight: 600,
+                        borderRadius: 12,
                         justifyContent: 'center',
-                        gap: 4,
-                        background: 'rgba(16,185,129,0.12)',
-                        border: '1px solid rgba(16,185,129,0.3)',
-                        color: 'var(--clr-emerald)',
+                        gap: 6,
+                        background: 'var(--grad-emerald)',
+                        border: 'none',
+                        color: '#fff',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                        transition: 'all 0.2s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(16,185,129,0.2)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.25)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(16,185,129,0.12)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }}
                     >
-                      <ArrowUpRight size={13} />
+                      <ArrowUpRight size={14} />
                       Simpan Dana
                     </button>
                     <button
@@ -1194,23 +1265,29 @@ export default function Accounts() {
                       className="btn-ghost"
                       style={{
                         flex: 1,
-                        padding: '8px 10px',
+                        padding: '9px 14px',
                         fontSize: 12,
-                        borderRadius: 10,
+                        fontWeight: 600,
+                        borderRadius: 12,
                         justifyContent: 'center',
-                        gap: 4,
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'var(--clr-text-2)',
+                        gap: 6,
+                        background: 'rgba(16, 185, 129, 0.02)',
+                        border: '1px solid rgba(16, 185, 129, 0.18)',
+                        color: 'var(--clr-emerald)',
+                        transition: 'all 0.2s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.07)';
+                        e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.02)';
+                        e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.18)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }}
                     >
-                      <ArrowDownLeft size={13} />
+                      <ArrowDownLeft size={14} />
                       Tarik Dana
                     </button>
                   </div>
