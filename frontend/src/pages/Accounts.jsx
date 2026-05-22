@@ -617,22 +617,20 @@ function StatCard({ icon, label, value, color, glow, delay = 0 }) {
       className="stat-card"
       style={{ border: `1px solid ${glow.replace('rgba', 'rgba').replace('0.2', '0.15')}` }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+      <div className="stat-header">
         <div
+          className="stat-icon-wrapper"
           style={{
-            width: 40, height: 40,
-            borderRadius: 12,
             background: glow,
             border: `1px solid ${color}40`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             color,
           }}
         >
           {icon}
         </div>
-        <span style={{ fontSize: 12, color: 'var(--clr-text-3)', fontWeight: 500 }}>{label}</span>
+        <span className="stat-label">{label}</span>
       </div>
-      <p className="font-display" style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-text)' }}>
+      <p className="font-display stat-value">
         {value}
       </p>
     </motion.div>
@@ -917,7 +915,7 @@ export default function Accounts() {
       {activeTab === 'accounts' && (
         <>
       {/* Summary Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 32 }}>
+      <div className="stats-grid">
         <StatCard
           icon={<Wallet size={18} />}
           label="Total Balance"
