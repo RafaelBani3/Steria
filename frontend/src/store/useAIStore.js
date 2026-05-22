@@ -1,6 +1,52 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { sendChatMessage, generateInsights, confirmPendingAction } from '../services/aiService';
+import { useAccountStore } from './useAccountStore';
+import { useBudgetStore } from './useBudgetStore';
+import { useIncomeStore } from './useIncomeStore';
+import { useExpenseStore } from './useExpenseStore';
+import { useFinanceStore } from './useFinanceStore';
+import { useNotificationStore } from './useNotificationStore';
+
+const triggerFinancialStoresRefresh = async (result = null) => {
+  try {
+    const now = new Date();
+    let month = now.getMonth() + 1;
+    let year = now.getFullYear();
+
+    // If result contains tasks with a date, use it to refresh the matching period
+    if (result && result.tasks && Array.isArray(result.tasks)) {
+      for (const t of result.tasks) {
+        const taskData = t.result || t.data;
+        const rawDate = taskData?.transactionDate || taskData?.date;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            month = d.getMonth() + 1;
+            year = d.getFullYear();
+            break;
+          }
+        }
+      }
+    }
+
+    // Force-fetch all stores to update caches in parallel
+    await Promise.all([
+      useAccountStore.getState().fetchAccounts(true),
+      useBudgetStore.getState().fetchCategories(true),
+      useBudgetStore.getState().fetchBudgetItems(null, true),
+      useIncomeStore.getState().fetchIncomes(month, year, true),
+      useExpenseStore.getState().fetchExpenses(month, year, true),
+      useFinanceStore.getState().fetchIncomes(),
+      useFinanceStore.getState().fetchExpenses(),
+      useFinanceStore.getState().fetchBudgets(),
+      useFinanceStore.getState().fetchSavings(),
+      useNotificationStore.getState().fetchNotifications(true),
+    ]);
+  } catch (error) {
+    console.error('Failed to refresh financial stores after AI action:', error);
+  }
+};
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
@@ -109,6 +155,10 @@ export const useAIStore = create(
           isChatLoading: false,
         }));
 
+        if (result.success && result.response_type === 'ACTION') {
+          triggerFinancialStoresRefresh(result);
+        }
+
         return result;
       },
 
@@ -137,6 +187,10 @@ export const useAIStore = create(
           isChatLoading: false,
           pendingConfirmation: null,
         }));
+
+        if (result.success) {
+          triggerFinancialStoresRefresh(result);
+        }
 
         return result;
       },
@@ -202,6 +256,10 @@ export const useAIStore = create(
           const userMsg = { id: `user-modal-${Date.now() - 1}`, sender: 'user', text: messageText.trim(), response_type: 'USER', timestamp: new Date().toISOString() };
           const aiMsg   = { id: `ai-modal-${Date.now()}`, sender: 'ai', text: result.message, response_type: result.response_type, insights: result.insights || [], tasks: result.tasks || [], timestamp: new Date().toISOString() };
           set(state => ({ chatHistory: [...state.chatHistory, userMsg, aiMsg] }));
+
+          if (result.response_type === 'ACTION') {
+            triggerFinancialStoresRefresh(result);
+          }
         } else {
           set({ error: result.message, isProcessing: false });
         }
@@ -220,6 +278,11 @@ export const useAIStore = create(
           aiResponse: result.success ? { ...result, justConfirmed: true } : { success: false, message: result.message },
           isProcessing: false,
         });
+
+        if (result.success) {
+          triggerFinancialStoresRefresh(result);
+        }
+
         return result;
       },
 
