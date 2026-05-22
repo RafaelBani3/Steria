@@ -7,7 +7,7 @@ export const getAccounts = async (req, res) => {
       where: { userId: req.user.userId, isActive: true },
       orderBy: { createdAt: 'asc' },
     });
-    res.set('Cache-Control', 'private, max-age=30');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json(accounts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -117,7 +117,7 @@ export const getAccountSummary = async (req, res) => {
     const totalCashflow = cashflowAccounts.reduce((sum, a) => sum + a.currentBalance, 0);
     const totalSavings = savingsAccounts.reduce((sum, a) => sum + a.currentBalance, 0);
 
-    res.set('Cache-Control', 'private, max-age=30');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json({
       accounts: accountsWithStats,
       cashflowAccounts,
