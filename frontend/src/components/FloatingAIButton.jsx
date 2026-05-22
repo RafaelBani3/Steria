@@ -1,21 +1,23 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Sparkles } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAIStore } from '../store/useAIStore';
 
 export default function FloatingAIButton() {
-  const { isOpen } = useAIStore();
+  const { isOpen, openModal, isProcessing, aiInsights } = useAIStore();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Hide on copilot page and when modal is open
   if (isOpen || location.pathname === '/copilot') return null;
 
   const handleClick = () => {
-    navigate('/copilot');
+    openModal();
   };
 
+  const unreadCount = aiInsights?.length || 0;
+
   return (
-    /* bottom-28 on mobile = 112px (clear of BottomNav ~90px) | bottom-6 on desktop */
     <div
       className="fixed right-5 z-50"
       style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 90px)' }}
@@ -23,56 +25,84 @@ export default function FloatingAIButton() {
       {/* Outer pulsing glow ring */}
       <motion.div
         animate={{
-          scale: [1, 1.25, 1],
-          opacity: [0.35, 0.7, 0.35],
+          scale: [1, 1.3, 1],
+          opacity: [0.3, 0.65, 0.3],
         }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-        className="absolute inset-0 rounded-full"
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
+          position: 'absolute', inset: -4, borderRadius: '50%',
           background: 'radial-gradient(circle, #7C3AED 0%, #4F46E5 60%, transparent 80%)',
           filter: 'blur(14px)',
+          pointerEvents: 'none',
         }}
       />
 
+      {/* Main button */}
       <motion.button
         onClick={handleClick}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.92 }}
-        animate={{ y: [0, -5, 0] }}
-        transition={{
-          y: { duration: 2.8, repeat: Infinity, ease: 'easeInOut' },
-        }}
+        whileHover={{ scale: 1.12 }}
+        whileTap={{ scale: 0.9 }}
+        animate={isProcessing
+          ? { rotate: [0, 5, -5, 0] }
+          : { y: [0, -5, 0] }
+        }
+        transition={isProcessing
+          ? { duration: 0.4, repeat: Infinity }
+          : { y: { duration: 2.8, repeat: Infinity, ease: 'easeInOut' } }
+        }
+        title="Steria AI Copilot — klik untuk bicara"
         style={{
           position: 'relative',
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
+          width: 54, height: 54, borderRadius: '50%',
           background: 'linear-gradient(135deg, #6C4CF1 0%, #9D5CFF 100%)',
-          border: '1.5px solid rgba(255,255,255,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: '0 8px 32px rgba(108,76,241,0.45)',
+          boxShadow: '0 8px 32px rgba(108,76,241,0.5), 0 2px 8px rgba(0,0,0,0.3)',
           color: '#fff',
         }}
-        title="Steria AI Copilot"
       >
-        <Bot size={22} strokeWidth={2} />
-        <Sparkles
-          size={10}
-          style={{
-            position: 'absolute',
-            top: 9,
-            right: 9,
-            color: 'rgba(255,255,255,0.8)',
-            animation: 'pulse 2s ease-in-out infinite',
-          }}
-        />
+        {isProcessing ? (
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}>
+            <Sparkles size={22} strokeWidth={2} />
+          </motion.div>
+        ) : (
+          <Bot size={22} strokeWidth={2} />
+        )}
+
+        {/* Sparkle accent */}
+        {!isProcessing && (
+          <motion.div
+            animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              position: 'absolute', top: 10, right: 10,
+              width: 8, height: 8,
+            }}
+          >
+            <Sparkles size={8} color="rgba(255,255,255,0.85)" strokeWidth={2.5} />
+          </motion.div>
+        )}
+
+        {/* Unread insights badge */}
+        <AnimatePresence>
+          {unreadCount > 0 && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              style={{
+                position: 'absolute', top: -2, right: -2,
+                width: 18, height: 18, borderRadius: '50%',
+                background: '#F59E0B', border: '2px solid var(--bg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 800, color: '#fff',
+              }}
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.button>
     </div>
   );

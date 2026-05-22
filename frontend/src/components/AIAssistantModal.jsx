@@ -1,386 +1,581 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Send, X, Bot, CheckCircle2, AlertTriangle, Sparkles, MessageSquare } from 'lucide-react';
+import {
+  Mic, MicOff, Send, X, Bot, CheckCircle2,
+  AlertTriangle, Sparkles, MessageSquare, Zap,
+} from 'lucide-react';
 import { useAIStore } from '../store/useAIStore';
-import { formatIDR } from '../utils/formatCurrency';
+
+// ─── Particle background (pure CSS-in-JS, no external dep) ───────────────────
+const PARTICLES = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: 2 + Math.random() * 3,
+  duration: 3 + Math.random() * 4,
+  delay: Math.random() * 3,
+}));
+
+// ─── Voice wave bars ──────────────────────────────────────────────────────────
+const WAVE_BARS = [0.6, 1.0, 1.4, 1.8, 1.4, 1.0, 0.6, 1.2, 0.8, 1.6, 1.0, 0.7];
+
+// ─── Quick suggestions ────────────────────────────────────────────────────────
+const QUICK_CHIPS = [
+  'Beli kopi 25rb pake OVO',
+  'Gajian 8 juta',
+  'Transfer 500rb ke tabungan',
+  'Gimana kondisi keuangan gue?',
+];
 
 export default function AIAssistantModal() {
-  const { 
-    isOpen, 
-    closeModal, 
-    isListening, 
-    setListening, 
-    isProcessing, 
-    transcript, 
-    setTranscript, 
-    aiResponse, 
-    error, 
-    setError, 
-    processMessage,
-    clearResponse,
-    inputMode,
-    setInputMode
+  const {
+    isOpen, closeModal,
+    isListening, setListening,
+    isProcessing,
+    transcript, setTranscript,
+    aiResponse, error, setError,
+    processMessage, clearResponse,
+    inputMode, setInputMode,
   } = useAIStore();
 
   const [textInput, setTextInput] = useState('');
   const recognitionRef = useRef(null);
   const silenceTimerRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Initialize Web Speech API if supported
+  // ── Speech recognition setup ─────────────────────────────
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'id-ID';
-      recognition.continuous = true;
-      recognition.interimResults = true;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
 
-      recognition.onresult = (event) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        setTranscript(currentTranscript);
+    const recognition = new SR();
+    recognition.lang = 'id-ID';
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
-        // Auto-stop after silence of 3 seconds
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = setTimeout(() => {
-          if (recognitionRef.current && isListening) {
-            recognitionRef.current.stop();
-          }
-        }, 3000);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          setError('Microphone access denied. Please enable microphone permissions.');
-        } else {
-          setError(`Voice recognition error: ${event.error}. Try text mode.`);
-        }
-        setListening(false);
-      };
-
-      recognition.onend = () => {
-        setListening(false);
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        // Process transcript if available
-        const currentText = useAIStore.getState().transcript;
-        if (currentText && currentText.trim()) {
-          processMessage(currentText);
-        }
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+    recognition.onresult = (event) => {
+      let full = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        full += event.results[i][0].transcript;
       }
+      setTranscript(full);
+
+      // Auto-stop after 3s of silence
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        recognitionRef.current?.stop();
+      }, 3000);
     };
+
+    recognition.onerror = (event) => {
+      console.error('SR error:', event.error);
+      setListening(false);
+      if (event.error === 'not-allowed') {
+        setError('Akses mikrofon ditolak. Aktifkan izin mikrofon di browser kamu.');
+      } else {
+        setError(`Gagal merekam suara (${event.error}). Coba mode teks ya.`);
+      }
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      const currentText = useAIStore.getState().transcript;
+      if (currentText?.trim()) {
+        processMessage(currentText);
+      }
+    };
+
+    recognitionRef.current = recognition;
+    return () => { recognitionRef.current?.stop(); };
   }, []);
 
-  // Cleanup when modal closes
+  // ── Cleanup on modal close ───────────────────────────────
   useEffect(() => {
     if (!isOpen) {
-      if (recognitionRef.current && isListening) {
-        recognitionRef.current.stop();
-      }
+      recognitionRef.current?.stop();
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       setTextInput('');
     }
   }, [isOpen]);
 
+  // ── Auto-focus text input when mode switches ─────────────
+  useEffect(() => {
+    if (inputMode === 'text' && isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [inputMode, isOpen]);
+
   const toggleListening = () => {
     clearResponse();
     setError(null);
     if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      recognitionRef.current?.stop();
     } else {
       if (!recognitionRef.current) {
-        setError('Browser voice recognition not supported. Please use text mode.');
+        setError('Browser kamu tidak mendukung voice recognition. Gunakan mode teks ya.');
         return;
       }
       setTranscript('');
       try {
         recognitionRef.current.start();
         setListening(true);
-      } catch (err) {
-        console.error('Recognition start error:', err);
+      } catch (e) {
+        console.error(e);
       }
     }
   };
 
   const handleTextSubmit = (e) => {
     e.preventDefault();
-    if (!textInput.trim()) return;
-    processMessage(textInput);
+    if (!textInput.trim() || isProcessing) return;
+    processMessage(textInput.trim());
     setTextInput('');
+  };
+
+  const handleChipClick = (text) => {
+    if (inputMode === 'voice') {
+      setInputMode('text');
+    }
+    setTextInput(text);
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   if (!isOpen) return null;
 
+  // ── State flags ──────────────────────────────────────────
+  const isSuccess = aiResponse?.success && aiResponse?.tasks?.length > 0;
+  const hasTasks  = aiResponse?.tasks?.filter(t => t.intent !== 'INQUIRY' && t.result).length > 0;
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={closeModal}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 999,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }}
+      >
+        {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.88, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-2xl text-slate-800"
+          exit={{ opacity: 0, scale: 0.88, y: 24 }}
+          transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'relative', width: '100%', maxWidth: 480,
+            borderRadius: 28, overflow: 'hidden',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--glass-border)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
+          }}
         >
-          {/* Subtle top ambient glowing mesh */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-gradient-to-b from-indigo-500/10 to-transparent blur-2xl pointer-events-none" />
+          {/* Ambient gradient top */}
+          <div style={{
+            position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+            width: 280, height: 100,
+            background: 'radial-gradient(ellipse, rgba(108,76,241,0.25) 0%, transparent 70%)',
+            pointerEvents: 'none', zIndex: 0,
+          }} />
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100">
-                <Bot className="w-4.5 h-4.5 text-indigo-600" />
+          {/* Floating particles */}
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+            {PARTICLES.map(p => (
+              <motion.div
+                key={p.id}
+                animate={{
+                  y: [0, -20, 0],
+                  opacity: [0.15, 0.45, 0.15],
+                  scale: [1, 1.3, 1],
+                }}
+                transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  left: `${p.x}%`, top: `${p.y}%`,
+                  width: p.size, height: p.size,
+                  borderRadius: '50%',
+                  background: 'var(--clr-violet)',
+                }}
+              />
+            ))}
+          </div>
+
+          {/* ── Header ─────────────────────────────────────── */}
+          <div style={{
+            position: 'relative', zIndex: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '18px 20px 14px',
+            borderBottom: '1px solid var(--glass-border)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: 'var(--violet-dim)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(108,76,241,0.2)',
+              }}>
+                <Bot size={18} color="var(--clr-violet)" strokeWidth={1.8} />
               </div>
-              <span className="text-sm font-bold text-slate-800 tracking-wide">Steria Copilot</span>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--clr-text)' }}>
+                  Steria Copilot
+                </p>
+                <p style={{ fontSize: 10, color: 'var(--clr-text-3)', fontWeight: 600 }}>
+                  AI Financial Assistant
+                </p>
+              </div>
             </div>
             <button
               onClick={closeModal}
-              className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors rounded-full hover:bg-slate-100"
+              style={{
+                width: 32, height: 32, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--bg)', border: '1px solid var(--glass-border)',
+                cursor: 'pointer', color: 'var(--clr-text-3)',
+              }}
             >
-              <X className="w-5 h-5" />
+              <X size={16} />
             </button>
           </div>
 
-          {/* Main Visual/Content Area */}
-          <div className="flex flex-col items-center justify-center min-h-[240px] p-6 relative">
-            
-            {/* 1. Animated AI Orb & Waveforms */}
-            <div className="relative flex items-center justify-center my-3">
-              {/* Processing Orbit rings */}
+          {/* ── Main Content ────────────────────────────────── */}
+          <div style={{
+            position: 'relative', zIndex: 1,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            padding: '28px 24px 16px', gap: 20, minHeight: 260,
+          }}>
+
+            {/* Central AI Orb */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {/* Processing orbit ring */}
               {isProcessing && (
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                  className="absolute w-32 h-32 rounded-full border border-dashed border-indigo-500/40"
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    position: 'absolute', inset: -10,
+                    borderRadius: '50%',
+                    border: '1.5px dashed rgba(108,76,241,0.4)',
+                  }}
+                />
+              )}
+              {/* Outer glow ring when listening */}
+              {isListening && (
+                <motion.div
+                  animate={{ scale: [1, 1.35, 1], opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                  style={{
+                    position: 'absolute', inset: -14, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(108,76,241,0.4) 0%, transparent 70%)',
+                  }}
                 />
               )}
 
-              {/* Central Glowing Orb */}
-              <motion.div
+              {/* Orb button */}
+              <motion.button
                 animate={{
-                  scale: isListening ? [1, 1.12, 1] : isProcessing ? [1, 1.05, 1] : [1, 1.03, 1],
-                  boxShadow: isListening 
-                    ? ['0 0 20px rgba(99,102,241,0.5)', '0 0 40px rgba(99,102,241,0.8)', '0 0 20px rgba(99,102,241,0.5)'] 
-                    : ['0 0 12px rgba(99,102,241,0.2)', '0 0 20px rgba(99,102,241,0.3)', '0 0 12px rgba(99,102,241,0.2)'],
+                  scale: isListening ? [1, 1.08, 1] : isProcessing ? [1, 1.04, 1] : [1, 1.02, 1],
+                  boxShadow: isListening
+                    ? ['0 0 24px rgba(108,76,241,0.6)', '0 0 48px rgba(108,76,241,0.9)', '0 0 24px rgba(108,76,241,0.6)']
+                    : ['0 8px 32px rgba(108,76,241,0.3)', '0 12px 40px rgba(108,76,241,0.4)', '0 8px 32px rgba(108,76,241,0.3)'],
                 }}
-                transition={{ duration: isListening ? 1.5 : 3, repeat: Infinity, ease: 'easeInOut' }}
-                className={`relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr ${
-                  isListening 
-                    ? 'from-indigo-600 via-violet-500 to-pink-500' 
-                    : isProcessing 
-                    ? 'from-indigo-600 via-violet-600 to-indigo-800' 
-                    : 'from-indigo-500 to-violet-500'
-                }`}
+                transition={{ duration: isListening ? 1.2 : 2.5, repeat: Infinity }}
+                onClick={inputMode === 'voice' ? toggleListening : undefined}
+                disabled={isProcessing && inputMode === 'voice'}
+                style={{
+                  width: 88, height: 88, borderRadius: '50%',
+                  background: isListening
+                    ? 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #6C4CF1 100%)'
+                    : isSuccess
+                      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+                      : 'linear-gradient(135deg, #6C4CF1 0%, #9D5CFF 60%, #C084FC 100%)',
+                  border: 'none', cursor: inputMode === 'voice' ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', overflow: 'hidden',
+                }}
               >
-                <Sparkles className={`w-7 h-7 text-white ${isProcessing ? 'animate-spin' : ''}`} />
-              </motion.div>
+                {isSuccess
+                  ? <CheckCircle2 size={34} color="#fff" strokeWidth={1.8} />
+                  : isProcessing
+                    ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
+                        <Sparkles size={30} color="#fff" strokeWidth={1.8} />
+                      </motion.div>
+                    : <Sparkles size={30} color="#fff" strokeWidth={1.8} />
+                }
+              </motion.button>
 
-              {/* Listening Waveform Bars */}
-              {isListening && (
-                <div className="absolute inset-0 flex items-center justify-center gap-1.5 pointer-events-none">
-                  {[1.2, 0.8, 1.5, 0.6, 1.3].map((heightScale, idx) => (
-                    <motion.div
-                      key={idx}
-                      animate={{
-                        height: ['10px', `${24 * heightScale}px`, '10px'],
-                      }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        delay: idx * 0.1,
-                        ease: 'easeInOut',
-                      }}
-                      className="w-1 bg-white rounded-full opacity-80"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* State Messaging / Transcripts */}
-            <div className="w-full text-center mt-3 mb-5 min-h-[50px] flex flex-col items-center justify-center">
-              {error ? (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }} 
-                  animate={{ opacity: 1, scale: 1 }} 
-                  className="flex items-center gap-2 px-4 py-2 bg-rose-50 border border-rose-100 text-rose-700 text-xs rounded-xl"
-                >
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
-                </motion.div>
-              ) : isProcessing ? (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-xs font-semibold text-indigo-600 animate-pulse uppercase tracking-wider"
-                >
-                  Processing financial intent...
-                </motion.p>
-              ) : isListening ? (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm font-semibold text-slate-800 italic px-4 line-clamp-2"
-                >
-                  "{transcript || 'Listening to your transaction...'}"
-                </motion.p>
-              ) : aiResponse ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-full px-2"
-                >
-                  <div className="text-[14px] leading-relaxed text-slate-800 text-left bg-slate-50 p-5 rounded-2xl border border-slate-200/80 shadow-inner">
-                    <p className="whitespace-pre-wrap">{aiResponse.message.replace(/"/g, '')}</p>
+              {/* Voice wave bars (visible only when listening) */}
+              <AnimatePresence>
+                {isListening && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    gap: 3, pointerEvents: 'none',
+                  }}>
+                    {WAVE_BARS.map((h, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ height: [`${6}px`, `${24 * h}px`, `${6}px`] }}
+                        transition={{ duration: 0.55, repeat: Infinity, delay: i * 0.07, ease: 'easeInOut' }}
+                        style={{ width: 3, borderRadius: 2, background: 'rgba(255,255,255,0.85)' }}
+                      />
+                    ))}
                   </div>
-                </motion.div>
-              ) : (
-                <p className="text-xs text-slate-400 font-medium">
-                  {inputMode === 'voice' ? 'Tap orb or button below to speak naturally' : 'Type your transaction below'}
-                </p>
-              )}
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Success Card Confirmation (Dynamic for all intents) */}
+            {/* Status text area */}
+            <div style={{ width: '100%', textAlign: 'center', minHeight: 56 }}>
+              <AnimatePresence mode="wait">
+                {error ? (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '10px 14px', borderRadius: 12,
+                      background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)',
+                      color: '#ef4444', fontSize: 12, fontWeight: 600,
+                    }}
+                  >
+                    <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                    <span style={{ textAlign: 'left' }}>{error}</span>
+                  </motion.div>
+                ) : isProcessing ? (
+                  <motion.p
+                    key="processing"
+                    initial={{ opacity: 0 }} animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-violet)', textTransform: 'uppercase', letterSpacing: '0.7px' }}
+                  >
+                    Memproses transaksi keuangan...
+                  </motion.p>
+                ) : isListening ? (
+                  <motion.p
+                    key="listening"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    style={{
+                      fontSize: 14, fontWeight: 600, color: 'var(--clr-text)',
+                      fontStyle: 'italic', lineHeight: 1.5,
+                    }}
+                  >
+                    {transcript ? `"${transcript}"` : 'Mendengarkan... bicara sekarang 🎙️'}
+                  </motion.p>
+                ) : aiResponse?.message ? (
+                  <motion.div
+                    key="response"
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      background: 'var(--bg)', borderRadius: 14, padding: '12px 14px',
+                      border: '1px solid var(--glass-border)', textAlign: 'left',
+                    }}
+                  >
+                    <p style={{
+                      fontSize: 13.5, lineHeight: 1.65, color: 'var(--clr-text)',
+                      fontWeight: 500, whiteSpace: 'pre-wrap',
+                    }}>
+                      {aiResponse.message}
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.p
+                    key="idle"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    style={{ fontSize: 12, color: 'var(--clr-text-3)', fontWeight: 500 }}
+                  >
+                    {inputMode === 'voice'
+                      ? 'Tap tombol orb di atas, lalu bicara 🎙️'
+                      : 'Ketik transaksi atau pertanyaan keuangan kamu 💬'}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Task confirmation card */}
             <AnimatePresence>
-              {aiResponse?.success && aiResponse?.tasks && aiResponse.tasks.length > 0 && (
+              {hasTasks && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  initial={{ opacity: 0, scale: 0.96, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ type: 'spring', damping: 20 }}
-                  className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-4 shadow-sm mb-2"
+                  style={{
+                    width: '100%', borderRadius: 16,
+                    background: 'var(--bg)', border: '1px solid var(--glass-border)',
+                    padding: '12px 14px',
+                  }}
                 >
-                  {aiResponse.tasks.map((task, idx) => {
-                    const isExpense = task.intent === 'EXPENSE';
-                    const isIncome = task.intent === 'INCOME';
-                    const isAllocation = task.intent === 'ALLOCATION';
-                    
-                    const colorClass = isIncome ? 'text-emerald-700' : isExpense ? 'text-rose-700' : isAllocation ? 'text-indigo-700' : 'text-amber-700';
-                    const bgColorClass = isIncome ? 'bg-emerald-50' : isExpense ? 'bg-rose-50' : isAllocation ? 'bg-indigo-50' : 'bg-amber-50';
-                    const borderColorClass = isIncome ? 'border-emerald-100' : isExpense ? 'border-rose-100' : isAllocation ? 'border-indigo-100' : 'border-amber-100';
+                  {aiResponse.tasks
+                    .filter(t => t.intent !== 'INQUIRY' && t.result)
+                    .map((task, idx) => {
+                      const colors = {
+                        EXPENSE:    { bg: 'rgba(239,68,68,0.08)',  text: '#ef4444',  label: 'rgba(239,68,68,0.15)' },
+                        INCOME:     { bg: 'rgba(16,185,129,0.08)', text: '#10B981', label: 'rgba(16,185,129,0.15)' },
+                        TRANSFER:   { bg: 'rgba(59,130,246,0.08)', text: '#3B82F6', label: 'rgba(59,130,246,0.15)' },
+                        SAVING:     { bg: 'rgba(245,158,11,0.08)', text: '#F59E0B', label: 'rgba(245,158,11,0.15)' },
+                        ALLOCATION: { bg: 'rgba(108,76,241,0.08)', text: 'var(--clr-violet)', label: 'var(--violet-dim)' },
+                      };
+                      const c = colors[task.intent] || colors.ALLOCATION;
 
-                    return (
-                      <div key={idx} className={`${idx > 0 ? 'mt-3 pt-3 border-t border-slate-250' : ''}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className={`px-2 py-0.5 rounded-lg ${bgColorClass} ${colorClass} text-[9px] font-black uppercase tracking-wider border ${borderColorClass}`}>
-                            {task.intent}
-                          </div>
-                          <span className="text-base font-black text-slate-800">
-                            {task.result?.amount ? formatIDR(task.result.amount) : task.result?.targetAmount ? formatIDR(task.result.targetAmount) : ''}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px]">
-                          <div className="flex flex-col">
-                            <span className="text-slate-400 font-bold uppercase text-[9px] mb-0.5">Category</span>
-                            <span className="text-slate-700 font-semibold">
-                              {task.result?.category || 'General'} &gt; {task.result?.subCategory || task.result?.name || 'Item'}
+                      return (
+                        <div key={idx} style={{ marginTop: idx > 0 ? 10 : 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px',
+                              padding: '3px 8px', borderRadius: 6, color: c.text, background: c.label,
+                            }}>
+                              {task.intent}
                             </span>
+                            {task.result?.amount && (
+                              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--clr-text)' }}>
+                                Rp {task.result.amount.toLocaleString('id-ID')}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex flex-col text-right">
-                            <span className="text-slate-400 font-bold uppercase text-[9px] mb-0.5">Note</span>
-                            <span className="text-slate-600 italic truncate max-w-[120px]">
-                              {task.result?.description || 'Processed'}
-                            </span>
-                          </div>
+                          <p style={{ fontSize: 11, color: 'var(--clr-text-3)', fontWeight: 500 }}>
+                            {task.result?.description || 'Berhasil dicatat'}
+                          </p>
                         </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Show Global Warning if exists */}
-                  {aiResponse?.tasks?.[0]?.result?.budgetStatus?.warning && (
-                    <div className="mt-3 bg-rose-50 border border-rose-100 text-rose-700 text-[10px] font-bold px-3 py-2 rounded-xl flex items-center gap-2">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{aiResponse.tasks[0].result.budgetStatus.warning}</span>
-                    </div>
-                  )}
+                      );
+                    })
+                  }
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Controls Footer */}
-          <div className="p-4 bg-slate-50/60 border-t border-slate-100 flex flex-col gap-3">
-            {/* Mode Switching & Main Trigger */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
-                <button
-                  type="button"
-                  onClick={() => setInputMode('voice')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    inputMode === 'voice' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Mic className="w-3.5 h-3.5" />
-                  <span>Voice</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInputMode('text')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    inputMode === 'text' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Text</span>
-                </button>
+          {/* ── Footer Controls ──────────────────────────────── */}
+          <div style={{
+            position: 'relative', zIndex: 1,
+            padding: '12px 20px 18px',
+            borderTop: '1px solid var(--glass-border)',
+            display: 'flex', flexDirection: 'column', gap: 12,
+          }}>
+            {/* Mode tabs */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{
+                display: 'flex', background: 'var(--bg)', borderRadius: 12,
+                border: '1px solid var(--glass-border)', padding: 4, gap: 4,
+              }}>
+                {[
+                  { mode: 'voice', icon: <Mic size={13} />, label: 'Voice' },
+                  { mode: 'text',  icon: <MessageSquare size={13} />, label: 'Text' },
+                ].map(({ mode, icon, label }) => (
+                  <button
+                    key={mode}
+                    onClick={() => { setInputMode(mode); clearResponse(); setError(null); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '6px 14px', borderRadius: 9, border: 'none',
+                      fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                      background: inputMode === mode ? 'var(--grad-brand)' : 'transparent',
+                      color: inputMode === mode ? '#fff' : 'var(--clr-text-3)',
+                      boxShadow: inputMode === mode ? '0 2px 8px var(--violet-glow)' : 'none',
+                      transition: 'all 200ms',
+                    }}
+                  >
+                    {icon}
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {/* Main Voice Button trigger */}
+              {/* Voice listen button */}
               {inputMode === 'voice' && (
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={toggleListening}
                   disabled={isProcessing}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition-all ${
-                    isListening 
-                      ? 'bg-red-500 text-white shadow-red-500/10 animate-pulse' 
-                      : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm'
-                  } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '9px 20px', borderRadius: 12, border: 'none',
+                    fontSize: 13, fontWeight: 700, cursor: isProcessing ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit', opacity: isProcessing ? 0.5 : 1,
+                    background: isListening
+                      ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+                      : 'var(--grad-brand)',
+                    color: '#fff',
+                    boxShadow: isListening
+                      ? '0 4px 14px rgba(239,68,68,0.35)'
+                      : '0 4px 14px var(--violet-glow)',
+                    transition: 'all 200ms',
+                  }}
                 >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  <span>{isListening ? 'Stop' : 'Listen'}</span>
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                  {isListening ? 'Stop' : 'Bicara'}
                 </motion.button>
               )}
             </div>
 
-            {/* Text Input Block */}
+            {/* Text input */}
             {inputMode === 'text' && (
-              <form onSubmit={handleTextSubmit} className="flex items-center gap-2 mt-1">
+              <form onSubmit={handleTextSubmit} style={{ display: 'flex', gap: 8 }}>
                 <input
+                  ref={inputRef}
                   type="text"
                   value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="e.g. Beli kopi kenangan 21 ribu..."
+                  onChange={e => setTextInput(e.target.value)}
+                  placeholder="Mis: Beli kopi 25rb pake OVO..."
                   disabled={isProcessing}
-                  className="flex-1 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition-colors"
+                  style={{
+                    flex: 1, background: 'var(--bg)', border: '1px solid var(--glass-border)',
+                    borderRadius: 12, padding: '10px 14px',
+                    fontSize: 13, color: 'var(--clr-text)', fontFamily: 'inherit',
+                    outline: 'none', transition: 'border-color 200ms',
+                  }}
                 />
-                <button
+                <motion.button
                   type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   disabled={isProcessing || !textInput.trim()}
-                  className="p-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white rounded-xl transition-all shadow-sm"
+                  style={{
+                    width: 44, height: 44, borderRadius: 12, border: 'none',
+                    background: 'var(--grad-brand)', cursor: isProcessing || !textInput.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: isProcessing || !textInput.trim() ? 0.5 : 1,
+                    boxShadow: '0 4px 14px var(--violet-glow)',
+                    transition: 'all 200ms',
+                  }}
                 >
-                  <Send className="w-4 h-4" />
-                </button>
+                  <Send size={17} color="#fff" strokeWidth={2.2} />
+                </motion.button>
               </form>
             )}
-          </div>
 
+            {/* Quick chips */}
+            {!aiResponse && !isProcessing && !isListening && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {QUICK_CHIPS.map((chip, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleChipClick(chip)}
+                    style={{
+                      padding: '5px 10px', borderRadius: 8,
+                      background: 'var(--bg)', border: '1px solid var(--glass-border)',
+                      fontSize: 11, fontWeight: 600, color: 'var(--clr-text-3)',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      whiteSpace: 'nowrap', transition: 'all 150ms',
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </motion.div>
-      </div>
+      </motion.div>
     </AnimatePresence>
   );
 }

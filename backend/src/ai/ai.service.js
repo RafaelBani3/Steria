@@ -1,16 +1,15 @@
-import { getSystemPrompt } from './ai.prompt.js';
+import { orchestrateAI } from './aiOrchestrator.js';
 import prisma from '../prisma/index.js';
-import { generateAIResponse } from './ai.providers.js';
 
 export const processFinanceTransaction = async (userId, messageText) => {
   try {
-    console.log('[AI Service] Fetching user context for v2 schema...');
+    console.log('[AI Service] Building financial context...');
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const endOfMonth   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     const startOfHistory = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    // Fetch all context with new schema
+    // ─── Parallel DB fetch ───────────────────────────────
     const [user, accounts, budgetCategories, recentExpenses, recentIncomes] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
       prisma.account.findMany({
@@ -28,11 +27,11 @@ export const processFinanceTransaction = async (userId, messageText) => {
       prisma.expense.findMany({
         where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
         include: {
-          account: { select: { id: true, providerName: true } },
+          account: { select: { id: true, providerName: true, accountName: true } },
           budgetItem: { select: { id: true, itemName: true } },
         },
         orderBy: { transactionDate: 'desc' },
-        take: 500,
+        take: 300,
       }),
       prisma.income.findMany({
         where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
@@ -41,7 +40,7 @@ export const processFinanceTransaction = async (userId, messageText) => {
       }),
     ]);
 
-    // Pre-compute analytics for AI context (backend handles all numbers)
+    // ─── Backend analytics (AI never recalculates these) ─
     const totalCashflow = accounts
       .filter(a => a.accountType === 'CASHFLOW')
       .reduce((sum, a) => sum + a.currentBalance, 0);
@@ -58,27 +57,25 @@ export const processFinanceTransaction = async (userId, messageText) => {
       return (d >= startOfMonth && d <= endOfMonth) ? sum + e.amount : sum;
     }, 0);
 
-    // Aggregate 6-month history
+    // 6-month aggregated history
     const historyMonths = {};
     for (let i = 0; i < 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       historyMonths[key] = { expense: 0, income: 0 };
     }
-
     recentExpenses.forEach(e => {
       const d = new Date(e.transactionDate);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (historyMonths[key]) historyMonths[key].expense += e.amount;
     });
-
     recentIncomes.forEach(i => {
       const d = new Date(i.transactionDate);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (historyMonths[key]) historyMonths[key].income += i.amount;
     });
 
-    // Build budget items context (flat list for AI)
+    // Budget items flat list
     const allBudgetItems = budgetCategories.flatMap(cat =>
       cat.budgetItems.map(item => ({
         id: item.id,
@@ -91,22 +88,19 @@ export const processFinanceTransaction = async (userId, messageText) => {
       }))
     );
 
-    // Build account spending stats
-    const accountStats = accounts.map(account => {
-      const spent = recentExpenses
+    // Account spending stats (only what AI needs)
+    const accountStats = accounts.map(account => ({
+      id: account.id,
+      name: account.accountName,
+      provider: account.providerName,
+      type: account.accountType,
+      balance: account.currentBalance,
+      monthlySpent: recentExpenses
         .filter(e => e.accountId === account.id)
-        .reduce((sum, e) => sum + e.amount, 0);
-      return {
-        id: account.id,
-        name: account.accountName,
-        provider: account.providerName,
-        type: account.accountType,
-        balance: account.currentBalance,
-        monthlySpent: spent,
-      };
-    });
+        .reduce((sum, e) => sum + e.amount, 0),
+    }));
 
-    const context = {
+    const financialContext = {
       userName: user?.name || 'User',
       accounts: accountStats,
       budgetItems: allBudgetItems,
@@ -118,15 +112,16 @@ export const processFinanceTransaction = async (userId, messageText) => {
       currentDate: now.toISOString().split('T')[0],
     };
 
-    // Call AI with updated context
-    const systemInstruction = getSystemPrompt(context);
-    console.log('[AI Service] Calling AI provider...');
-    const responseText = await generateAIResponse(systemInstruction, messageText, true);
+    // ─── Orchestrate AI ──────────────────────────────────
+    console.log('[AI Service] Sending to orchestrator...');
+    const responseText = await orchestrateAI(userId, messageText, financialContext, true);
     console.log('[AI Service] AI response received.');
 
-    const cleanedJson = responseText.replace(/```json|```/g, '').trim();
+    // ─── Parse & validate AI response ───────────────────
+    const cleanedJson = responseText.replace(/```json\s?|```/g, '').trim();
     const aiResponse = JSON.parse(cleanedJson);
 
+    // ─── Execute tasks ───────────────────────────────────
     const taskResults = [];
     const tasks = aiResponse.tasks || [aiResponse];
 
@@ -145,39 +140,104 @@ export const processFinanceTransaction = async (userId, messageText) => {
         case 'SAVING':
           dbResult = await handleSaving(userId, task.data, accounts);
           break;
+        case 'TRANSFER':
+          dbResult = await handleTransfer(userId, task.data, accounts);
+          break;
         case 'INQUIRY':
+          // Read-only — no DB action needed
           break;
         default:
-          console.warn('Unknown intent:', task.intent);
+          console.warn('[AI Service] Unknown intent:', task.intent);
       }
       taskResults.push({ intent: task.intent, result: dbResult });
     }
 
     return {
       success: true,
-      message: aiResponse.global_reply || aiResponse.reply || "Oke, sudah saya proses!",
+      message: aiResponse.global_reply || aiResponse.reply || 'Oke, sudah saya proses! ✨',
       insights: aiResponse.insights || [],
       tasks: taskResults,
     };
   } catch (error) {
-    console.error('AI Service Error:', error);
+    console.error('[AI Service] Error:', error.message);
     throw error;
   }
 };
 
-// ─── HANDLERS ─────────────────────────────────────────
+// ─── Context builder for insights (read-only) ─────────────────────────────────
+export const buildFinancialContext = async (userId) => {
+  const now = new Date();
+  const startOfMonth  = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const startOfHistory = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const [user, accounts, recentExpenses, recentIncomes] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.account.findMany({ where: { userId, isActive: true } }),
+    prisma.expense.findMany({
+      where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
+      select: { amount: true, transactionDate: true, accountId: true },
+      take: 300,
+    }),
+    prisma.income.findMany({
+      where: { userId, transactionDate: { gte: startOfHistory, lte: endOfMonth } },
+      select: { amount: true, transactionDate: true },
+      take: 100,
+    }),
+  ]);
+
+  const totalCashflow = accounts.filter(a => a.accountType === 'CASHFLOW').reduce((s, a) => s + a.currentBalance, 0);
+  const totalSavings  = accounts.filter(a => a.accountType === 'SAVINGS').reduce((s, a) => s + a.currentBalance, 0);
+
+  const monthlyIncome    = recentIncomes.filter(i => new Date(i.transactionDate) >= startOfMonth).reduce((s, i) => s + i.amount, 0);
+  const monthlyExpenses  = recentExpenses.filter(e => new Date(e.transactionDate) >= startOfMonth).reduce((s, e) => s + e.amount, 0);
+
+  const historyMonths = {};
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    historyMonths[key] = { expense: 0, income: 0 };
+  }
+  recentExpenses.forEach(e => {
+    const key = `${new Date(e.transactionDate).getFullYear()}-${String(new Date(e.transactionDate).getMonth() + 1).padStart(2, '0')}`;
+    if (historyMonths[key]) historyMonths[key].expense += e.amount;
+  });
+  recentIncomes.forEach(i => {
+    const key = `${new Date(i.transactionDate).getFullYear()}-${String(new Date(i.transactionDate).getMonth() + 1).padStart(2, '0')}`;
+    if (historyMonths[key]) historyMonths[key].income += i.amount;
+  });
+
+  return {
+    userName: user?.name || 'User',
+    accounts: accounts.map(a => ({
+      id: a.id, name: a.accountName, provider: a.providerName,
+      type: a.accountType, balance: a.currentBalance, monthlySpent: 0,
+    })),
+    totalCashflow, totalSavings, monthlyIncome, monthlyExpenses,
+    historicalSummary: historyMonths,
+    currentDate: now.toISOString().split('T')[0],
+  };
+};
+
+// ─── HANDLERS ─────────────────────────────────────────────────────────────────
 
 async function handleExpense(userId, data, accounts, budgetItems, budgetCategories) {
-  // Find matching budget item
+  // Match account by provider name if mentioned, else first cashflow
+  let targetAccount = null;
+  if (data.source_account) {
+    targetAccount = accounts.find(a =>
+      a.providerName?.toLowerCase().includes(data.source_account.toLowerCase()) ||
+      a.accountName?.toLowerCase().includes(data.source_account.toLowerCase())
+    );
+  }
+  if (!targetAccount) {
+    targetAccount = accounts.find(a => a.accountType === 'CASHFLOW');
+  }
+  if (!targetAccount) return null;
+
   const matchedItem = budgetItems.find(item =>
     item.itemName?.toLowerCase().includes(data.subcategory?.toLowerCase())
   );
-
-  // Find matching account (prefer account mentioned in data, else pick first cashflow)
-  const cashflowAccount = accounts.find(a => a.accountType === 'CASHFLOW');
-  if (!cashflowAccount) return null;
-
-  // Find category
   const matchedCategory = budgetCategories.find(cat =>
     cat.categoryName?.toLowerCase() === data.category?.toLowerCase()
   );
@@ -185,7 +245,7 @@ async function handleExpense(userId, data, accounts, budgetItems, budgetCategori
   const expense = await prisma.expense.create({
     data: {
       userId,
-      accountId: cashflowAccount.id,
+      accountId: targetAccount.id,
       budgetItemId: matchedItem?.id || null,
       categoryId: matchedCategory?.id || null,
       amount: data.amount,
@@ -194,13 +254,11 @@ async function handleExpense(userId, data, accounts, budgetItems, budgetCategori
     },
   });
 
-  // Update account balance
   await prisma.account.update({
-    where: { id: cashflowAccount.id },
+    where: { id: targetAccount.id },
     data: { currentBalance: { decrement: data.amount } },
   });
 
-  // Recalculate budget item
   if (matchedItem?.id) {
     const { recalculateBudgetItem } = await import('../controllers/budget.item.controller.js');
     await recalculateBudgetItem(matchedItem.id);
@@ -210,13 +268,19 @@ async function handleExpense(userId, data, accounts, budgetItems, budgetCategori
 }
 
 async function handleIncome(userId, data, accounts) {
-  const cashflowAccount = accounts.find(a => a.accountType === 'CASHFLOW');
-  if (!cashflowAccount) return null;
+  let targetAccount = null;
+  if (data.source_account) {
+    targetAccount = accounts.find(a =>
+      a.providerName?.toLowerCase().includes(data.source_account.toLowerCase())
+    );
+  }
+  if (!targetAccount) targetAccount = accounts.find(a => a.accountType === 'CASHFLOW');
+  if (!targetAccount) return null;
 
   const income = await prisma.income.create({
     data: {
       userId,
-      accountId: cashflowAccount.id,
+      accountId: targetAccount.id,
       amount: data.amount,
       incomeType: 'OTHER',
       description: data.description || data.subcategory || 'Income',
@@ -225,7 +289,7 @@ async function handleIncome(userId, data, accounts) {
   });
 
   await prisma.account.update({
-    where: { id: cashflowAccount.id },
+    where: { id: targetAccount.id },
     data: { currentBalance: { increment: data.amount } },
   });
 
@@ -233,16 +297,16 @@ async function handleIncome(userId, data, accounts) {
 }
 
 async function handleAllocation(userId, data, budgetCategories) {
-  const matchedCategory = budgetCategories.find(cat =>
-    cat.categoryName?.toLowerCase() === data.category?.toLowerCase()
-  ) || budgetCategories[0]; // fallback to first
+  const matchedCategory =
+    budgetCategories.find(cat =>
+      cat.categoryName?.toLowerCase() === data.category?.toLowerCase()
+    ) || budgetCategories[0];
 
   if (!matchedCategory) return null;
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  // Check if item already exists
   const existingItem = await prisma.budgetItem.findFirst({
     where: {
       userId,
@@ -281,7 +345,6 @@ async function handleSaving(userId, data, accounts) {
   const savingsAccount = accounts.find(a => a.accountType === 'SAVINGS');
   if (!cashflowAccount || !savingsAccount) return null;
 
-  // Create savings transaction via Transfer
   const transaction = await prisma.transfer.create({
     data: {
       userId,
@@ -294,15 +357,49 @@ async function handleSaving(userId, data, accounts) {
     },
   });
 
-  // Update balances
-  await prisma.account.update({
-    where: { id: cashflowAccount.id },
-    data: { currentBalance: { decrement: data.amount } },
+  await prisma.account.update({ where: { id: cashflowAccount.id }, data: { currentBalance: { decrement: data.amount } } });
+  await prisma.account.update({ where: { id: savingsAccount.id  }, data: { currentBalance: { increment: data.amount } } });
+
+  return transaction;
+}
+
+async function handleTransfer(userId, data, accounts) {
+  // Find source account
+  let fromAccount = null;
+  if (data.source_account) {
+    fromAccount = accounts.find(a =>
+      a.providerName?.toLowerCase().includes(data.source_account.toLowerCase()) ||
+      a.accountName?.toLowerCase().includes(data.source_account.toLowerCase())
+    );
+  }
+  if (!fromAccount) fromAccount = accounts.find(a => a.accountType === 'CASHFLOW');
+
+  // Find destination account
+  let toAccount = null;
+  if (data.destination_account) {
+    toAccount = accounts.find(a =>
+      a.providerName?.toLowerCase().includes(data.destination_account.toLowerCase()) ||
+      a.accountName?.toLowerCase().includes(data.destination_account.toLowerCase())
+    );
+  }
+  if (!toAccount) toAccount = accounts.find(a => a.accountType === 'SAVINGS');
+
+  if (!fromAccount || !toAccount || fromAccount.id === toAccount.id) return null;
+
+  const transaction = await prisma.transfer.create({
+    data: {
+      userId,
+      fromAccountId: fromAccount.id,
+      toAccountId: toAccount.id,
+      amount: data.amount,
+      transferType: 'TRANSFER',
+      notes: data.description || `Transfer ke ${toAccount.accountName}`,
+      transactionDate: data.date ? new Date(data.date) : new Date(),
+    },
   });
-  await prisma.account.update({
-    where: { id: savingsAccount.id },
-    data: { currentBalance: { increment: data.amount } },
-  });
+
+  await prisma.account.update({ where: { id: fromAccount.id }, data: { currentBalance: { decrement: data.amount } } });
+  await prisma.account.update({ where: { id: toAccount.id   }, data: { currentBalance: { increment: data.amount } } });
 
   return transaction;
 }
