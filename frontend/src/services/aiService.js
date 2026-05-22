@@ -1,16 +1,7 @@
 /**
  * aiService.js — Centralized frontend AI API layer
- *
- * All AI calls go through here, with:
- *  - Consistent error handling
- *  - User-friendly Indonesian error messages
- *  - Client-side duplicate request prevention
  */
-
 import api from './api';
-
-// ─── In-flight request tracking (prevent duplicate simultaneous calls) ─────────
-let _activeChatRequest = null;
 
 const USER_FRIENDLY_ERRORS = {
   429: 'AI Steria sedang sibuk 😄 Coba beberapa saat lagi ya.',
@@ -26,47 +17,53 @@ const mapError = (err) => {
 
 // ─── Chat ──────────────────────────────────────────────────────────────────────
 /**
- * Send a chat message to Steria AI.
  * @param {string} message
- * @returns {Promise<{success, message, insights, tasks}>}
+ * @param {object|null} conversationContext - Context from previous turn
+ * @returns {Promise<{success, response_type, message, tasks, insights, context_hint, pending_tasks?, missing_fields?}>}
  */
-export const sendChatMessage = async (message) => {
-  // Cancel previous if still in-flight (shouldn't happen with disabled UI, but safety net)
-  if (_activeChatRequest) {
-    console.log('[aiService] Cancelling previous chat request');
-  }
-
+export const sendChatMessage = async (message, conversationContext = null) => {
   try {
-    const promise = api.post('/ai/chat', { message: message.trim() });
-    _activeChatRequest = promise;
-    const res = await promise;
-    _activeChatRequest = null;
+    const res = await api.post('/ai/chat', {
+      message: message.trim(),
+      conversationContext,
+    });
 
     if (res.data?.success) return res.data;
-    // Server returned success:false (graceful AI error)
+
     return {
       success: false,
+      response_type: 'ERROR',
       message: res.data?.message || USER_FRIENDLY_ERRORS[500],
-      insights: [],
-      tasks: [],
+      insights: [], tasks: [],
     };
   } catch (err) {
-    _activeChatRequest = null;
     console.error('[aiService] Chat error:', err.message);
     return {
       success: false,
+      response_type: 'ERROR',
       message: mapError(err),
-      insights: [],
-      tasks: [],
+      insights: [], tasks: [],
     };
   }
 };
 
-// ─── Insights ──────────────────────────────────────────────────────────────────
+// ─── Confirm pending action ────────────────────────────────────────────────────
 /**
- * Generate AI financial insights (read-only).
- * @returns {Promise<{success, insights, summary, health_score, health_label}>}
+ * Execute previously returned REQUIRES_CONFIRMATION tasks
+ * @param {Array} pendingTasks - tasks from the pending response
  */
+export const confirmPendingAction = async (pendingTasks) => {
+  try {
+    const res = await api.post('/ai/confirm', { pending_tasks: pendingTasks });
+    if (res.data?.success) return res.data;
+    return { success: false, response_type: 'ERROR', message: USER_FRIENDLY_ERRORS[500], tasks: [] };
+  } catch (err) {
+    console.error('[aiService] Confirm error:', err.message);
+    return { success: false, response_type: 'ERROR', message: mapError(err), tasks: [] };
+  }
+};
+
+// ─── Insights ──────────────────────────────────────────────────────────────────
 export const generateInsights = async () => {
   try {
     const res = await api.post('/ai/insights');
@@ -79,11 +76,6 @@ export const generateInsights = async () => {
 };
 
 // ─── Voice Parse ───────────────────────────────────────────────────────────────
-/**
- * Parse voice transcript into structured intent (no DB writes).
- * @param {string} transcript
- * @returns {Promise<{success, parsed: {intent, amount, category, item, source_account, destination_account, confidence}}>}
- */
 export const parseVoiceIntent = async (transcript) => {
   try {
     const res = await api.post('/ai/parse', { transcript: transcript.trim() });

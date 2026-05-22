@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   processFinanceController,
+  confirmActionController,
   generateInsightsController,
   parseVoiceController,
 } from './ai.controller.js';
@@ -11,19 +12,17 @@ const router = express.Router();
 // All AI routes require authentication
 router.use(authenticate);
 
-// ─── Chat / Action routes ─────────────────────────────
-// POST /api/ai         — main chat (used by floating modal)
+// ─── Chat / Action ────────────────────────────────────
 router.post('/', processFinanceController);
-
-// POST /api/ai/chat    — alias (used by AIChat page)
 router.post('/chat', processFinanceController);
 
-// ─── Insights route ───────────────────────────────────
-// POST /api/ai/insights — read-only AI financial insights
+// ─── Confirm pending action ───────────────────────────
+router.post('/confirm', confirmActionController);
+
+// ─── Insights (read-only) ─────────────────────────────
 router.post('/insights', generateInsightsController);
 
-// ─── Voice parse route ────────────────────────────────
-// POST /api/ai/parse   — lightweight intent extraction only
+// ─── Voice parse (lightweight) ────────────────────────
 router.post('/parse', parseVoiceController);
 
 export default router;
