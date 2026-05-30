@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Wallet, PiggyBank, ArrowUpRight, Bot } from 'lucide-react';
@@ -24,6 +24,8 @@ export default function Dashboard() {
   const { incomes, fetchIncomes, getTotalIncome } = useIncomeStore();
   const { expenses, fetchExpenses, getTotalExpenses } = useExpenseStore();
   const { budgetItems, categories, fetchBudgetItems, fetchCategories, getTotals } = useBudgetStore();
+
+  const [chartTab, setChartTab] = useState('spending'); // 'spending' | 'savings'
 
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -65,6 +67,22 @@ export default function Dashboard() {
     value: budgetItems.filter(i => i.categoryId === cat.id).reduce((s, i) => s + i.usedAmount, 0),
   })).filter(d => d.value > 0);
   const PIE_COLORS = ['#2DD4BF', '#10B981', '#F59E0B'];
+
+  // Mock 6-month savings growth
+  const savingsGrowthData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (5 - i));
+    const monthLabel = d.toLocaleDateString('id-ID', { month: 'short' });
+    const growthRate = Math.max(500000, monthlyNet);
+    const amount = Math.max(0, totalSavings - (growthRate * (5 - i)));
+    return { month: monthLabel, amount };
+  });
+
+  const savingsPieData = savingsAccounts.map(acc => ({
+    name: acc.accountName,
+    value: acc.currentBalance,
+  })).filter(d => d.value > 0);
+  const SAVINGS_PIE_COLORS = ['#10B981', '#34D399', '#059669', '#047857', '#6EE7B7', '#A7F3D0'];
 
   const overBudgetItems = budgetItems.filter(i => i.allocatedAmount > 0 && i.usedAmount >= i.allocatedAmount * 0.8);
   const recentExpenses = expenses.slice(0, 5);
@@ -217,73 +235,173 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* ── Spending Breakdown + 7-Day Chart ─────── */}
+      {/* ── Dashboard Charts ─────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
-        {/* 7-Day Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="glass"
-          style={{ borderRadius: 18, padding: '16px 14px 8px' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>7-Day Spending</p>
-            <span className="badge badge-rose" style={{ fontSize: 9 }}>This week</span>
-          </div>
-          <ResponsiveContainer width="100%" height={100}>
-            <AreaChart data={last7} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="spendG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#5A6888' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(v) => [fmt(v), 'Spent']}
-                contentStyle={{ background: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: 10, fontSize: 11, color: 'var(--clr-text)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
-                cursor={{ stroke: 'rgba(15,23,42,0.06)', strokeWidth: 1 }}
-              />
-              <Area type="monotone" dataKey="amount" stroke="#F43F5E" strokeWidth={2} fill="url(#spendG)" dot={false} activeDot={{ r: 4, fill: '#F43F5E' }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Spending Breakdown Donut — only when data exists */}
-        {pieData.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.18 }}
-            className="glass"
-            style={{ borderRadius: 18, padding: '16px 14px' }}
+        
+        {/* Toggle Spending / Savings */}
+        <div style={{ display: 'flex', background: 'rgba(15,23,42,0.04)', borderRadius: 12, padding: 4 }}>
+          <button
+            onClick={() => setChartTab('spending')}
+            style={{
+              flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 600, borderRadius: 10, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+              background: chartTab === 'spending' ? '#fff' : 'transparent',
+              color: chartTab === 'spending' ? 'var(--clr-rose)' : 'var(--clr-text-3)',
+              boxShadow: chartTab === 'spending' ? 'var(--shadow-sm)' : 'none'
+            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>Spending Breakdown</p>
-              <Link to="/budgets" style={{ fontSize: 11, color: 'var(--clr-purple-mid)', textDecoration: 'none', fontWeight: 600 }}>See All</Link>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <PieChart width={100} height={100}>
-                <Pie data={pieData} cx={45} cy={45} innerRadius={28} outerRadius={44} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-              </PieChart>
-              <div style={{ flex: 1 }}>
-                {pieData.map((d, i) => {
-                  const total = pieData.reduce((s, x) => s + x.value, 0);
-                  const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
-                  return (
-                    <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[i], flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: 'var(--clr-text-2)', flex: 1 }}>{d.name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)' }}>{pct}%</span>
-                    </div>
-                  );
-                })}
+            📉 Spending
+          </button>
+          <button
+            onClick={() => setChartTab('savings')}
+            style={{
+              flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 600, borderRadius: 10, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+              background: chartTab === 'savings' ? '#fff' : 'transparent',
+              color: chartTab === 'savings' ? 'var(--clr-emerald)' : 'var(--clr-text-3)',
+              boxShadow: chartTab === 'savings' ? 'var(--shadow-sm)' : 'none'
+            }}
+          >
+            📈 Savings
+          </button>
+        </div>
+
+        {chartTab === 'spending' ? (
+          <>
+            {/* 7-Day Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="glass"
+              style={{ borderRadius: 18, padding: '16px 14px 8px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>7-Day Spending</p>
+                <span className="badge badge-rose" style={{ fontSize: 9 }}>This week</span>
               </div>
-            </div>
-          </motion.div>
+              <ResponsiveContainer width="100%" height={100}>
+                <AreaChart data={last7} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="spendG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#5A6888' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(v) => [fmt(v), 'Spent']}
+                    contentStyle={{ background: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: 10, fontSize: 11, color: 'var(--clr-text)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
+                    cursor={{ stroke: 'rgba(15,23,42,0.06)', strokeWidth: 1 }}
+                  />
+                  <Area type="monotone" dataKey="amount" stroke="#F43F5E" strokeWidth={2} fill="url(#spendG)" dot={false} activeDot={{ r: 4, fill: '#F43F5E' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* Spending Breakdown Donut — only when data exists */}
+            {pieData.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+                className="glass"
+                style={{ borderRadius: 18, padding: '16px 14px' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>Spending Breakdown</p>
+                  <Link to="/budgets" style={{ fontSize: 11, color: 'var(--clr-purple-mid)', textDecoration: 'none', fontWeight: 600 }}>See All</Link>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <PieChart width={100} height={100}>
+                    <Pie data={pieData} cx={45} cy={45} innerRadius={28} outerRadius={44} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                  </PieChart>
+                  <div style={{ flex: 1 }}>
+                    {pieData.map((d, i) => {
+                      const total = pieData.reduce((s, x) => s + x.value, 0);
+                      const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                      return (
+                        <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: PIE_COLORS[i], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: 'var(--clr-text-2)', flex: 1 }}>{d.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)' }}>{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* 6-Month Savings Growth Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="glass"
+              style={{ borderRadius: 18, padding: '16px 14px 8px' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>Savings Growth</p>
+                <span className="badge badge-emerald" style={{ fontSize: 9 }}>6 Months</span>
+              </div>
+              <ResponsiveContainer width="100%" height={100}>
+                <AreaChart data={savingsGrowthData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="saveG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: '#5A6888' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(v) => [fmt(v), 'Savings']}
+                    contentStyle={{ background: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: 10, fontSize: 11, color: 'var(--clr-text)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
+                    cursor={{ stroke: 'rgba(15,23,42,0.06)', strokeWidth: 1 }}
+                  />
+                  <Area type="monotone" dataKey="amount" stroke="#10B981" strokeWidth={2} fill="url(#saveG)" dot={{ r: 3, fill: '#10B981', strokeWidth: 0 }} activeDot={{ r: 4, fill: '#10B981' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* Savings Allocation Donut — only when data exists */}
+            {savingsPieData.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+                className="glass"
+                style={{ borderRadius: 18, padding: '16px 14px' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>Savings Allocation</p>
+                  <Link to="/accounts" style={{ fontSize: 11, color: 'var(--clr-emerald)', textDecoration: 'none', fontWeight: 600 }}>See All</Link>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <PieChart width={100} height={100}>
+                    <Pie data={savingsPieData} cx={45} cy={45} innerRadius={28} outerRadius={44} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                      {savingsPieData.map((_, i) => <Cell key={i} fill={SAVINGS_PIE_COLORS[i % SAVINGS_PIE_COLORS.length]} />)}
+                    </Pie>
+                  </PieChart>
+                  <div style={{ flex: 1, maxHeight: 100, overflowY: 'auto' }} className="no-scrollbar">
+                    {savingsPieData.map((d, i) => {
+                      const total = savingsPieData.reduce((s, x) => s + x.value, 0);
+                      const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                      return (
+                        <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: SAVINGS_PIE_COLORS[i % SAVINGS_PIE_COLORS.length], flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: 'var(--clr-text-2)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--clr-text)' }}>{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
 
