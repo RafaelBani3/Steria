@@ -371,7 +371,7 @@ export default function BudgetManagement() {
       </motion.div>
 
       {/* ── Category Summary Cards (Needs / Wants / Savings) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div className="stack-on-mobile stack-cols-3" style={{ marginBottom: 16 }}>
         {[
           { key: 'Needs',   pct: allocationRule.needs,   cfg: CATEGORY_CONFIG.Needs },
           { key: 'Wants',   pct: allocationRule.wants,   cfg: CATEGORY_CONFIG.Wants },
@@ -396,6 +396,7 @@ export default function BudgetManagement() {
                 borderRadius: 16, padding: '14px 14px',
                 border: `1px solid ${cfg.color}28`,
                 display: 'flex', flexDirection: 'column', gap: 8,
+                overflow: 'hidden'
               }}
             >
               {/* Top row */}
@@ -454,7 +455,7 @@ export default function BudgetManagement() {
       </div>
 
       {/* ── Summary bottom row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div className="stack-on-mobile stack-cols-2" style={{ marginBottom: 20 }}>
         <div className="glass" style={{ borderRadius: 14, padding: '12px 14px', background: 'var(--grad-brand)', border: 'none' }}>
           <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Total Teralokasi</p>
           <p className="font-display" style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{formatRp(totalAllocated)}</p>

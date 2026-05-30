@@ -788,4 +788,26 @@ body {
     scroll-snap-align: center !important;
     min-width: 280px;
   }
+  
+  .grid-mobile-1 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.stack-on-mobile {
+  display: grid;
+  gap: 12px;
+}
+.stack-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.stack-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 768px) {
+  .stack-cols-3,
+  .stack-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
 }

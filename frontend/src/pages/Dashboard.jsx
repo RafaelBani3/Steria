@@ -71,10 +71,14 @@ export default function Dashboard() {
   // Mock 6-month savings growth
   const savingsGrowthData = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
+    d.setDate(1); // Fix month overflow for months with 31 days
     d.setMonth(d.getMonth() - (5 - i));
     const monthLabel = d.toLocaleDateString('id-ID', { month: 'short' });
-    const growthRate = Math.max(500000, monthlyNet);
-    const amount = Math.max(0, totalSavings - (growthRate * (5 - i)));
+    
+    // Create a smooth fake growth curve based on current savings
+    const step = Math.max(100000, totalSavings * 0.15); 
+    const amount = Math.max(0, totalSavings - (step * (5 - i)));
+    
     return { month: monthLabel, amount };
   });
 
@@ -272,7 +276,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               className="glass"
-              style={{ borderRadius: 18, padding: '16px 14px 8px' }}
+              style={{ borderRadius: 18, padding: '16px 14px 8px', overflow: 'hidden' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>7-Day Spending</p>
@@ -341,7 +345,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               className="glass"
-              style={{ borderRadius: 18, padding: '16px 14px 8px' }}
+              style={{ borderRadius: 18, padding: '16px 14px 8px', overflow: 'hidden' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--clr-text)' }}>Savings Growth</p>
@@ -385,7 +389,7 @@ export default function Dashboard() {
                       {savingsPieData.map((_, i) => <Cell key={i} fill={SAVINGS_PIE_COLORS[i % SAVINGS_PIE_COLORS.length]} />)}
                     </Pie>
                   </PieChart>
-                  <div style={{ flex: 1, maxHeight: 100, overflowY: 'auto' }} className="no-scrollbar">
+                  <div style={{ flex: 1, minWidth: 0, maxHeight: 100, overflowY: 'auto' }} className="no-scrollbar">
                     {savingsPieData.map((d, i) => {
                       const total = savingsPieData.reduce((s, x) => s + x.value, 0);
                       const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
