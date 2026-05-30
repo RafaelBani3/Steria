@@ -240,7 +240,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* ── Dashboard Charts ─────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12, minWidth: 0 }}>
         
         {/* Toggle Spending / Savings */}
         <div style={{ display: 'flex', background: 'rgba(15,23,42,0.04)', borderRadius: 12, padding: 4 }}>
