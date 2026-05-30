@@ -215,7 +215,7 @@ export default function BudgetManagement() {
   const [showEditItem, setShowEditItem] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [targetCategory, setTargetCategory] = useState(null);
-  const [form, setForm] = useState({ itemName: '', allocatedAmount: '', accountId: '', color: '#7C3AED' });
+  const [form, setForm] = useState({ itemName: '', allocatedAmount: '', sourceAccountId: '', accountId: '', color: '#7C3AED' });
 
   // Allocation rule state
   const [selectedPreset, setSelectedPreset] = useState(() => {
@@ -272,7 +272,8 @@ export default function BudgetManagement() {
     const defaultAccountId = isSavings
       ? (savingsAccounts[0]?.id || '')
       : (cashflowAccounts[0]?.id || '');
-    setForm({ itemName: '', allocatedAmount: '', accountId: defaultAccountId, color: '#7C3AED' });
+    const defaultSourceAccountId = cashflowAccounts[0]?.id || '';
+    setForm({ itemName: '', allocatedAmount: '', sourceAccountId: defaultSourceAccountId, accountId: defaultAccountId, color: '#7C3AED' });
     setShowAddItem(true);
   }, [savingsAccounts, cashflowAccounts]);
 
@@ -282,6 +283,7 @@ export default function BudgetManagement() {
     setForm({
       itemName: item.itemName,
       allocatedAmount: formatNumberInput(String(item.allocatedAmount)),
+      sourceAccountId: item.sourceAccountId || '',
       accountId: item.accountId || '',
       color: item.color || '#7C3AED'
     });
@@ -297,6 +299,7 @@ export default function BudgetManagement() {
     try {
       await createBudgetItem({
         categoryId: targetCategory.id,
+        sourceAccountId: form.sourceAccountId || null,
         accountId: form.accountId || null,
         itemName: form.itemName,
         allocatedAmount: amount,
@@ -323,6 +326,7 @@ export default function BudgetManagement() {
       await updateBudgetItem(editingItem.id, {
         itemName: form.itemName,
         allocatedAmount: amount,
+        sourceAccountId: form.sourceAccountId || null,
         accountId: form.accountId || null,
         color: form.color,
       });
@@ -747,6 +751,29 @@ export default function BudgetManagement() {
                   )}
                 </div>
 
+                {/* Source Account (Sumber Dana) */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    💳 Sumber Dana / Source Account (Opsional)
+                  </label>
+                  {cashflowAccounts.length === 0 ? (
+                    <div style={{ padding: '10px 12px', background: 'rgba(245,158,11,0.08)', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', fontSize: 12, color: 'var(--clr-amber)' }}>
+                      ⚠️ Belum ada cashflow account.
+                    </div>
+                  ) : (
+                    <select
+                      className="input-dark"
+                      value={form.sourceAccountId}
+                      onChange={(e) => setForm((f) => ({ ...f, sourceAccountId: e.target.value }))}
+                    >
+                      <option value="">— Pilih Sumber Dana (Opsional) —</option>
+                      {cashflowAccounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} (Rp {acc.currentBalance.toLocaleString('id-ID')})</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
                 {/* Destination Account (Target Rekening) */}
                 <div>
                   {(() => {
@@ -890,6 +917,30 @@ export default function BudgetManagement() {
                   )}
                 </div>
 
+                {/* Source Account (Sumber Dana) */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-text-3)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 8 }}>
+                    💳 Sumber Dana / Source Account (Opsional)
+                  </label>
+                  {cashflowAccounts.length === 0 ? (
+                    <div style={{ padding: '10px 12px', background: 'rgba(245,158,11,0.08)', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', fontSize: 12, color: 'var(--clr-amber)' }}>
+                      ⚠️ Belum ada cashflow account.
+                    </div>
+                  ) : (
+                    <select
+                      className="input-dark"
+                      value={form.sourceAccountId}
+                      onChange={(e) => setForm((f) => ({ ...f, sourceAccountId: e.target.value }))}
+                      disabled={!!editingItem?.sourceAccountId} // Disable if already linked
+                    >
+                      <option value="">— Pilih Sumber Dana (Opsional) —</option>
+                      {cashflowAccounts.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.icon || '💳'} {acc.accountName} (Rp {acc.currentBalance.toLocaleString('id-ID')})</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
                 {/* Destination Account (Target Rekening) */}
                 <div>
                   {(() => {
@@ -912,6 +963,7 @@ export default function BudgetManagement() {
                             className="input-dark"
                             value={form.accountId}
                             onChange={(e) => setForm((f) => ({ ...f, accountId: e.target.value }))}
+                            disabled={!!editingItem?.accountId} // Disable if already linked
                           >
                             <option value="">{anyLabel}</option>
                             {accountList.map((acc) => (
