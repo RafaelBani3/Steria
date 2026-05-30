@@ -1047,7 +1047,7 @@ export default function Accounts() {
 
                 <div
                   style={{
-                    width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+                    width: 44, height: 44, borderRadius: 14, flexShrink: 0,
                     background: `${account.color || '#7C3AED'}20`,
                     border: `1px solid ${account.color || '#7C3AED'}35`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1056,55 +1056,55 @@ export default function Accounts() {
                 >
                   {account.icon || '💳'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)', marginBottom: 2 }}>
-                    {account.providerName}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--clr-text-3)' }}>
-                    {account.accountName} {account.accountNumber ? `· ···· ${account.accountNumber.slice(-4)}` : ''}
-                  </p>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)' }}>
-                    {formatRp(account.currentBalance)}
-                  </p>
-                  {account.monthlyExpenses > 0 && (
-                    <p style={{ fontSize: 10, color: 'var(--clr-rose)', marginTop: 2 }}>
-                      -{formatRp(account.monthlyExpenses)} spent
-                    </p>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => setEditTarget(account)}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--clr-cyan)';
-                      e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--clr-text-3)';
-                      e.currentTarget.style.background = 'none';
-                    }}
-                    title="Edit account"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(account)}
-                    style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--clr-rose)';
-                      e.currentTarget.style.background = 'rgba(244, 63, 94, 0.08)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--clr-text-3)';
-                      e.currentTarget.style.background = 'none';
-                    }}
-                    title="Delete account"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {/* Top row: Info & Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--clr-text)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {account.providerName}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--clr-text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {account.accountName} {account.accountNumber ? `· ···· ${account.accountNumber.slice(-4)}` : ''}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setEditTarget(account)}
+                        style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-cyan)'; e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-3)'; e.currentTarget.style.background = 'none'; }}
+                        title="Edit account"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(account)}
+                        style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--clr-text-3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-rose)'; e.currentTarget.style.background = 'rgba(244, 63, 94, 0.08)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-3)'; e.currentTarget.style.background = 'none'; }}
+                        title="Delete account"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Bottom row: Balances */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--clr-text)' }}>
+                        {formatRp(account.currentBalance)}
+                      </p>
+                    </div>
+                    {account.monthlyExpenses > 0 && (
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: 10, color: 'var(--clr-rose)', fontWeight: 600 }}>
+                          -{formatRp(account.monthlyExpenses)} spent
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}

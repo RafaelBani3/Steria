@@ -770,7 +770,7 @@ body {
     gap: 16px !important;
     overflow-x: auto !important;
     scroll-snap-type: x mandatory !important;
-    padding-bottom: 24px !important;
+    padding-bottom: 12px !important;
     /* Bleed to screen edges */
     margin-right: calc(-1 * var(--space-md)) !important;
     margin-left: calc(-1 * var(--space-md)) !important;

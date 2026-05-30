@@ -192,7 +192,7 @@ const CategorySection = memo(function CategorySection({ category, items, totalIn
                 </button>
               </div>
             ) : (
-              <div>
+              <div className="horizontal-slider-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {items.map((item) => (
                   <BudgetItemRow key={item.id} item={item} onEdit={onEditItem} onDelete={onDeleteItem} />
                 ))}
@@ -671,19 +671,18 @@ export default function BudgetManagement() {
           <p style={{ color: 'var(--clr-text)', fontWeight: 600, marginBottom: 4 }}>Loading budget categories...</p>
         </div>
       ) : (
-        <div className="horizontal-slider-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {categoriesWithItems.map((cat) => (
-            <div key={cat.id}>
-              <CategorySection
-                category={cat}
-                items={cat.items}
-                totalIncome={totalIncome}
-                onAddItem={handleOpenAddItem}
-                onEditItem={handleOpenEditItem}
-                onDeleteItem={handleDeleteItem}
-                allocationRule={allocationRule}
-              />
-            </div>
+            <CategorySection
+              key={cat.id}
+              category={cat}
+              items={cat.items}
+              totalIncome={totalIncome}
+              onAddItem={handleOpenAddItem}
+              onEditItem={handleOpenEditItem}
+              onDeleteItem={handleDeleteItem}
+              allocationRule={allocationRule}
+            />
           ))}
         </div>
       )}
