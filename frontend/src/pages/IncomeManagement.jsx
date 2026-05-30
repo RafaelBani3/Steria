@@ -27,6 +27,7 @@ export default function IncomeManagement() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     accountId: '',
@@ -54,6 +55,7 @@ export default function IncomeManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.accountId || !form.amount) { toast.error('Please fill all required fields'); return; }
+    setIsSubmitting(true);
     try {
       await createIncome(form);
       await fetchAccounts(true); // force-refresh balances
@@ -62,6 +64,8 @@ export default function IncomeManagement() {
       setShowForm(false);
     } catch (err) {
       toast.error('Failed to add income');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -353,8 +357,17 @@ export default function IncomeManagement() {
                   <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
-                    <ArrowUpRight size={16} /> Add Income
+                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <div className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUpRight size={16} /> Add Income
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

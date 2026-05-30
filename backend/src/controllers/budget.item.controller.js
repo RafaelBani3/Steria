@@ -211,8 +211,36 @@ export const deleteBudgetItem = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    await prisma.budgetItem.delete({ where: { id: itemId } });
-    res.json({ message: 'Budget item deleted' });
+    let transactions = [];
+
+    // Refund remaining budget if money is linked
+    if (existing.sourceAccountId && existing.accountId && existing.remainingAmount > 0) {
+      const targetAccount = await prisma.account.findUnique({ where: { id: existing.accountId } });
+      const refundAmount = targetAccount ? Math.min(existing.remainingAmount, targetAccount.currentBalance) : 0;
+      
+      if (refundAmount > 0) {
+        transactions.push(
+          prisma.account.update({ where: { id: existing.accountId }, data: { currentBalance: { decrement: refundAmount } } }),
+          prisma.account.update({ where: { id: existing.sourceAccountId }, data: { currentBalance: { increment: refundAmount } } }),
+          prisma.transfer.create({
+            data: {
+              userId: req.user.userId,
+              fromAccountId: existing.accountId,
+              toAccountId: existing.sourceAccountId,
+              amount: refundAmount,
+              transferType: 'WITHDRAW',
+              notes: `Refund Hapus Budget: ${existing.itemName}`,
+            }
+          })
+        );
+      }
+    }
+
+    transactions.push(prisma.budgetItem.delete({ where: { id: itemId } }));
+
+    await prisma.$transaction(transactions);
+
+    res.json({ message: 'Budget item deleted and funds refunded if applicable' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
