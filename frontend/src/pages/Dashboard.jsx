@@ -45,6 +45,10 @@ export default function Dashboard() {
   const budgetUsedPct = totalAllocated > 0 ? Math.round((totalUsed / totalAllocated) * 100) : 0;
   const avgDailySpend = totalExpenses > 0 ? Math.round(totalExpenses / now.getDate()) : 0;
 
+  const monthlyNet = totalIncome - totalExpenses;
+  const monthsLeft = 12 - month;
+  const projectedEOY = totalSavings + Math.max(0, monthlyNet * monthsLeft);
+
   // 7-day spending chart
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -136,6 +140,29 @@ export default function Dashboard() {
           </p>
         </motion.div>
       </div>
+
+      {/* ── EOY Projection ───────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.09 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.04) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          borderRadius: 18, padding: '16px 16px', marginBottom: 12
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--clr-emerald)' }}>✨ Proyeksi Tabungan Akhir Tahun</p>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--clr-text-3)', textTransform: 'uppercase' }}>Des {year}</span>
+        </div>
+        <p className="font-display" style={{ fontSize: 24, fontWeight: 800, color: 'var(--clr-text)', lineHeight: 1.2 }}>
+          {fmtFull(projectedEOY)}
+        </p>
+        <p style={{ fontSize: 11, color: 'var(--clr-text-3)', marginTop: 4 }}>
+          *Berdasarkan tren tabungan bulan ini (+{fmt(Math.max(0, monthlyNet))}/bln dikali sisa {monthsLeft} bulan)
+        </p>
+      </motion.div>
 
       {/* ── Overview This Month ───────────────── */}
       <motion.div

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useAccountStore } from '../store/useAccountStore';
 import RupiahInput from '../components/RupiahInput';
+import { parseNumberInput } from '../utils/formatCurrency';
 
 
 const formatRp = (n) =>
@@ -55,9 +56,12 @@ export default function IncomeManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.accountId || !form.amount) { toast.error('Please fill all required fields'); return; }
+    
+    const parsedAmount = parseNumberInput(form.amount);
+    
     setIsSubmitting(true);
     try {
-      await createIncome(form);
+      await createIncome({ ...form, amount: parsedAmount });
       await fetchAccounts(true); // force-refresh balances
       toast.success('Income added successfully! 💸');
       setForm({ accountId: cashflowAccounts[0]?.id || '', amount: '', incomeType: 'SALARY', description: '', transactionDate: now.toISOString().split('T')[0] });
@@ -357,13 +361,13 @@ export default function IncomeManagement() {
                   <button type="button" onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }} disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <div className="spinner" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                        Saving...
-                      </>
-                    ) : (
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    style={{ flex: 2, justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }} 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Saving...' : (
                       <>
                         <ArrowUpRight size={16} /> Add Income
                       </>
