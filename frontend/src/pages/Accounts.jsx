@@ -999,7 +999,7 @@ export default function Accounts() {
           </div>
 
           {/* Mobile: list rows / Desktop: card grid */}
-          <div className="accounts-list-mobile">
+          <div className="accounts-list-mobile horizontal-slider-mobile">
             {cashflowAccounts.map((account, i) => (
               <motion.div
                 key={account.id}
@@ -1122,7 +1122,7 @@ export default function Accounts() {
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+          <div className="horizontal-slider-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {savingsAccounts.map((account, i) => {
               const hasTarget = account.targetAmount && account.targetAmount > 0;
               const progressPct = hasTarget ? Math.min(100, (account.currentBalance / account.targetAmount) * 100) : 0;

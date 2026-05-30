@@ -760,3 +760,32 @@ body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* ── MOBILE SLIDER LAYOUT ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .horizontal-slider-mobile {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 16px !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    padding-bottom: 24px !important;
+    /* Bleed to screen edges */
+    margin-right: calc(-1 * var(--space-md)) !important;
+    margin-left: calc(-1 * var(--space-md)) !important;
+    padding-left: var(--space-md) !important;
+    padding-right: var(--space-md) !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  .horizontal-slider-mobile::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  .horizontal-slider-mobile > * {
+    flex: 0 0 88% !important;
+    scroll-snap-align: center !important;
+    min-width: 280px;
+  }
+}
