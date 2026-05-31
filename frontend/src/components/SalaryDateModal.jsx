@@ -50,13 +50,13 @@ export default function SalaryDateModal() {
           >
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ 
-                width: 64, height: 64, borderRadius: '50%', background: 'var(--clr-violet-glow)', 
+                width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-elevated)', 
                 display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
-                border: '1px solid var(--clr-violet)'
+                border: '2px solid var(--clr-violet)'
               }}>
                 <Calendar size={32} style={{ color: 'var(--clr-violet)' }} />
               </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Kapan Tanggal Gajianmu?</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--clr-text)', marginBottom: 8 }}>Kapan Tanggal Gajianmu?</h2>
               <p style={{ fontSize: 13, color: 'var(--clr-text-3)', lineHeight: 1.5 }}>
                 Agar budgetmu tidak kereset sebelum waktunya, Steria perlu tahu kapan siklus gajianmu dimulai setiap bulannya.
               </p>
@@ -77,8 +77,8 @@ export default function SalaryDateModal() {
                     onChange={(e) => setDate(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
                     style={{
                       width: 80, padding: '12px', borderRadius: 16,
-                      border: '2px solid var(--clr-violet)', background: 'rgba(124, 58, 237, 0.1)',
-                      color: '#fff', fontWeight: 800, fontSize: 28, fontFamily: 'inherit',
+                      border: '2px solid var(--clr-violet)', background: 'var(--bg-elevated)',
+                      color: 'var(--clr-text)', fontWeight: 800, fontSize: 28, fontFamily: 'inherit',
                       outline: 'none', textAlign: 'center'
                     }}
                   />
