@@ -62,6 +62,7 @@ export const register = async (req, res) => {
         bio: user.bio,
         financialGoals: user.financialGoals,
         monthlyIncomeTarget: user.monthlyIncomeTarget,
+        salaryDate: user.salaryDate,
         createdAt: user.createdAt
       }
     });
@@ -110,6 +111,7 @@ export const login = async (req, res) => {
         bio: user.bio,
         financialGoals: user.financialGoals,
         monthlyIncomeTarget: user.monthlyIncomeTarget,
+        salaryDate: user.salaryDate,
         createdAt: user.createdAt
       }
     });

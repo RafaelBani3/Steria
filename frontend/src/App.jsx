@@ -14,6 +14,7 @@ import AIChat from './pages/AIChat';
 import Analytics from './pages/Analytics';
 import { useAuthStore } from './store/useAuthStore';
 import { Toaster } from 'sonner';
+import SalaryDateModal from './components/SalaryDateModal';
 
 const ProtectedRoute = ({ children }) => {
   const token = useAuthStore((state) => state.token);
@@ -41,6 +42,7 @@ function App() {
           },
         }}
       />
+      <SalaryDateModal />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

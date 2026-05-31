@@ -1,20 +1,38 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+import { useAuthStore } from './useAuthStore';
+
 const CACHE_TTL = 30 * 1000; // 30 seconds
+
+const calculatePeriodBasedOnSalaryDate = () => {
+  const user = useAuthStore.getState().user;
+  const salaryDate = user?.salaryDate || 1;
+  const now = new Date();
+  
+  // If today is >= salaryDate, we are budgeting for the NEXT month.
+  // Unless salaryDate is 1, then it's just the current month.
+  if (salaryDate > 1 && now.getDate() >= salaryDate) {
+    now.setMonth(now.getMonth() + 1);
+  }
+  
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
 
 export const useBudgetStore = create((set, get) => ({
   categories: [],
   budgetItems: [],
   isLoading: false,
-  selectedPeriod: (() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  })(),
+  selectedPeriod: calculatePeriodBasedOnSalaryDate(),
   lastFetchedItems: null,     // { period: string, at: timestamp }
   lastFetchedCategories: null, // timestamp
 
   setSelectedPeriod: (period) => set({ selectedPeriod: period }),
+  
+  // Call this after login or when salaryDate changes
+  refreshPeriodBasedOnSalaryDate: () => {
+    set({ selectedPeriod: calculatePeriodBasedOnSalaryDate() });
+  },
 
   fetchCategories: async (force = false) => {
     const { lastFetchedCategories, isLoading } = get();

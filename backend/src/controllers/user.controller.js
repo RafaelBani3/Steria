@@ -14,6 +14,7 @@ export const getProfile = async (req, res) => {
         avatarUrl: true,
         monthlyIncomeTarget: true,
         financialGoals: true,
+        salaryDate: true,
         createdAt: true
       }
     });
@@ -33,6 +34,7 @@ export const getProfile = async (req, res) => {
       profilePic: user.avatarUrl,
       incomeTarget: user.monthlyIncomeTarget,
       financialGoals: user.financialGoals,
+      salaryDate: user.salaryDate,
       createdAt: user.createdAt
     });
   } catch (error) {
@@ -44,7 +46,7 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { name, username, phone, bio, profilePic, incomeTarget, financialGoals } = req.body;
+    const { name, username, phone, bio, profilePic, incomeTarget, financialGoals, salaryDate } = req.body;
 
     // Check if username is taken
     if (username) {
@@ -68,7 +70,8 @@ export const updateProfile = async (req, res) => {
         bio,
         avatarUrl: profilePic,
         monthlyIncomeTarget: incomeTarget ? parseFloat(incomeTarget) : undefined,
-        financialGoals
+        financialGoals,
+        salaryDate: salaryDate !== undefined ? parseInt(salaryDate) : undefined
       }
     });
 
@@ -82,6 +85,7 @@ export const updateProfile = async (req, res) => {
       profilePic: user.avatarUrl,
       incomeTarget: user.monthlyIncomeTarget,
       financialGoals: user.financialGoals,
+      salaryDate: user.salaryDate,
       createdAt: user.createdAt
     });
   } catch (error) {

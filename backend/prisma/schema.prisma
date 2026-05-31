@@ -27,6 +27,7 @@ model User {
   bio                     String?               @map("bio")
   financialGoals          String?               @map("financial_goals")
   monthlyIncomeTarget     Float?                @map("monthly_income_target")
+  salaryDate              Int?                  @map("salary_date")
 
   accounts            Account[]
   incomes             Income[]
